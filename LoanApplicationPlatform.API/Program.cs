@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using LoanApplicationPlatform.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +60,9 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddDbContext<LoanApplicationPlatform.API.DbContexts.LoanApplicationPlatformContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<ILoanRepository, LoanRepository>();
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<LoanApplicationPlatform.API.Profiles.LoanApplicationProfile>());
 
 var app = builder.Build();
 
