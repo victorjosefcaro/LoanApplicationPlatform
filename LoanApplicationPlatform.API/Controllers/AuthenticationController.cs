@@ -95,7 +95,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var newUser = new User
             {
                 Username = requestBody.Username,
-                PasswordHash = requestBody.Password, // No hashing to keep it simple for the demo
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
                 Role = "Applicant"
             };
 
@@ -123,7 +123,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var newUser = new User
             {
                 Username = requestBody.Username,
-                PasswordHash = requestBody.Password,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
                 Role = requestBody.Role
             };
 
@@ -140,8 +140,12 @@ namespace LoanApplicationPlatform.API.Controllers
                 return null;
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username && u.PasswordHash == password);
-            return user;
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                return user;
+            }
+            return null;
         }
     }
 }

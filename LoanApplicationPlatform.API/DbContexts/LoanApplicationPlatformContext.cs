@@ -24,9 +24,9 @@ namespace LoanApplicationPlatform.API.DbContexts
                 new Treasury { Id = 1, Balance = 1000000m } // Start with 1M in the treasury
             );
 
-            // Seed Admin User (We'll use a dummy hash for now)
+            // Seed Admin User (Using a real BCrypt hash for "password")
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, Username = "admin", PasswordHash = "dummyhash", Role = "Admin" }
+                new User { Id = 1, Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"), Role = "Admin" }
             );
         }
     }
