@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="LoanApplicationPlatform.API/LoanApplicationPlatform.API.csproj" />
+  <Project Path="LoanApplicationPlatform/LoanApplicationPlatform.csproj" />
+</Solution>
