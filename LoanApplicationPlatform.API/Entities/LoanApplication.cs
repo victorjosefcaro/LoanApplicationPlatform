@@ -28,7 +28,7 @@ namespace LoanApplicationPlatform.API.Entities
         public string Purpose { get; set; } = string.Empty;
 
         [MaxLength(50)]
-        public string Status { get; set; } = "Pending"; // Pending, Under Review, Approved, Rejected, Released, Cancelled
+        public string Status { get; set; } = "Submitted"; // Submitted, Returned, Reviewed, Approved, Rejected, Released, Cancelled, Completed
         
         [MaxLength(500)]
         public string? Remarks { get; set; }

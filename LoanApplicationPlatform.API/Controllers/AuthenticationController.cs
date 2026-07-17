@@ -60,8 +60,8 @@ namespace LoanApplicationPlatform.API.Controllers
 
             var claimsForToken = new List<Claim>
             {
-                new Claim("sub", user.Id.ToString()),
-                new Claim("role", user.Role)
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
             var jwtSecurityToken = new JwtSecurityToken(

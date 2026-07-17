@@ -1,4 +1,5 @@
 using AutoMapper;
+using LoanApplicationPlatform.API.Constants;
 using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Services;
@@ -83,7 +84,7 @@ namespace LoanApplicationPlatform.API.Controllers
 
             var application = _mapper.Map<LoanApplication>(applicationDto);
             application.ApplicantId = int.Parse(userIdStr);
-            application.Status = "Submitted";
+            application.Status = LoanStatus.Submitted;
             application.InterestRate = 0.05m; // Flat 5% interest rate
             application.CreatedAt = DateTime.UtcNow;
 
@@ -96,7 +97,7 @@ namespace LoanApplicationPlatform.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Applicant")]
-        public async Task<ActionResult> UpdateApplication(int id, [FromBody] LoanApplicationForCreationDto applicationDto)
+        public async Task<ActionResult> UpdateApplication(int id, [FromBody] LoanApplicationForUpdateDto applicationDto)
         {
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return NotFound();
@@ -104,7 +105,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdStr == null || application.ApplicantId != int.Parse(userIdStr)) return Forbid();
 
-            if (application.Status != "Draft" && application.Status != "Returned")
+            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned)
             {
                 return BadRequest("Can only edit applications in Draft or Returned status.");
             }
@@ -125,7 +126,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdStr == null || application.ApplicantId != int.Parse(userIdStr)) return Forbid();
 
-            if (application.Status != "Draft" && application.Status != "Returned")
+            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned)
             {
                 return BadRequest("Can only submit applications in Draft or Returned status.");
             }
@@ -139,7 +140,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 }
             }
 
-            application.Status = "Submitted";
+            application.Status = LoanStatus.Submitted;
             await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
@@ -154,12 +155,12 @@ namespace LoanApplicationPlatform.API.Controllers
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdStr == null || application.ApplicantId != int.Parse(userIdStr)) return Forbid();
 
-            if (application.Status != "Draft" && application.Status != "Returned" && application.Status != "Submitted")
+            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned && application.Status != LoanStatus.Submitted)
             {
                 return BadRequest("Application cannot be cancelled at this stage.");
             }
 
-            application.Status = "Cancelled";
+            application.Status = LoanStatus.Cancelled;
             await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
@@ -171,7 +172,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return NotFound();
 
-            if (application.Status != "Submitted")
+            if (application.Status != LoanStatus.Submitted)
             {
                 return BadRequest("Can only review submitted applications.");
             }
@@ -190,7 +191,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return NotFound();
 
-            if (application.Status != "Reviewed")
+            if (application.Status != LoanStatus.Reviewed)
             {
                 return BadRequest("Can only process applications that have been reviewed.");
             }
@@ -209,7 +210,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return NotFound();
 
-            if (application.Status != "Approved")
+            if (application.Status != LoanStatus.Approved)
             {
                 return BadRequest("Can only release funds for approved applications.");
             }
@@ -232,11 +233,11 @@ namespace LoanApplicationPlatform.API.Controllers
                     DueDate = DateTime.UtcNow.AddMonths(i),
                     AmountDue = monthlyAmount,
                     AmountPaid = 0,
-                    Status = "Pending"
+                    Status = PaymentStatus.Pending
                 });
             }
 
-            application.Status = "Released";
+            application.Status = LoanStatus.Released;
             await _loanRepository.SaveChangesAsync();
             return NoContent();
         }

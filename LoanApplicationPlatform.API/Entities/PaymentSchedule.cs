@@ -20,6 +20,6 @@ namespace LoanApplicationPlatform.API.Entities
         public decimal AmountPaid { get; set; }
         
         [MaxLength(50)]
-        public string Status { get; set; } = "Unpaid"; // Unpaid, Partial, Paid
+        public string Status { get; set; } = "Pending"; // Pending, Payment Submitted, Partially Paid, Paid
     }
 }

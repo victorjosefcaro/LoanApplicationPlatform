@@ -1,4 +1,5 @@
 using AutoMapper;
+using LoanApplicationPlatform.API.Constants;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -56,9 +57,9 @@ namespace LoanApplicationPlatform.API.Controllers
 
             if (scheduleToPay == null) return NotFound("Payment schedule not found.");
             
-            if (scheduleToPay.Status == "Paid") return BadRequest("This schedule is already paid.");
+            if (scheduleToPay.Status == PaymentStatus.Paid) return BadRequest("This schedule is already paid.");
 
-            scheduleToPay.Status = "Payment Submitted";
+            scheduleToPay.Status = PaymentStatus.PaymentSubmitted;
 
             await _loanRepository.SaveChangesAsync();
             return NoContent();
@@ -73,7 +74,7 @@ namespace LoanApplicationPlatform.API.Controllers
 
             if (scheduleToPost == null) return NotFound("Payment schedule not found.");
             
-            if (scheduleToPost.Status != "Payment Submitted" && scheduleToPost.Status != "Partially Paid")
+            if (scheduleToPost.Status != PaymentStatus.PaymentSubmitted && scheduleToPost.Status != PaymentStatus.PartiallyPaid)
                 return BadRequest("Schedule must be in Submitted or Partially Paid status to post.");
 
             if (paymentDto.Amount > scheduleToPost.AmountDue - scheduleToPost.AmountPaid)
@@ -85,11 +86,11 @@ namespace LoanApplicationPlatform.API.Controllers
             
             if (scheduleToPost.AmountPaid >= scheduleToPost.AmountDue)
             {
-                scheduleToPost.Status = "Paid";
+                scheduleToPost.Status = PaymentStatus.Paid;
             }
             else
             {
-                scheduleToPost.Status = "Partially Paid";
+                scheduleToPost.Status = PaymentStatus.PartiallyPaid;
             }
 
             // Update Treasury
@@ -101,12 +102,12 @@ namespace LoanApplicationPlatform.API.Controllers
 
             // Loan Closure check
             var allSchedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
-            if (allSchedules.All(s => s.Status == "Paid"))
+            if (allSchedules.All(s => s.Status == PaymentStatus.Paid))
             {
                 var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
                 if (application != null)
                 {
-                    application.Status = "Completed";
+                    application.Status = LoanStatus.Completed;
                 }
             }
 

@@ -27,7 +27,7 @@ namespace LoanApplicationPlatform.API.Controllers
 
         [HttpPost("deposit")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> DepositFunds([FromBody] LoanApplicationPlatform.API.Models.PaymentDto depositDto)
+        public async Task<ActionResult> DepositFunds([FromBody] LoanApplicationPlatform.API.Models.DepositDto depositDto)
         {
             if (depositDto.Amount <= 0) return BadRequest("Deposit amount must be positive.");
 
