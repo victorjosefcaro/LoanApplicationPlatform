@@ -41,9 +41,9 @@ namespace LoanApplicationPlatform.API.Controllers
             return Ok(_mapper.Map<IEnumerable<PaymentScheduleDto>>(schedules));
         }
 
-        [HttpPost("{scheduleId}/pay")]
+        [HttpPost("{scheduleId}/submit")]
         [Authorize(Roles = "Applicant")]
-        public async Task<ActionResult> SubmitPayment(int loanApplicationId, int scheduleId, [FromBody] PaymentDto paymentDto)
+        public async Task<ActionResult> SubmitPayment(int loanApplicationId, int scheduleId)
         {
             var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
             if (application == null) return NotFound();
@@ -58,20 +58,38 @@ namespace LoanApplicationPlatform.API.Controllers
             
             if (scheduleToPay.Status == "Paid") return BadRequest("This schedule is already paid.");
 
-            if (paymentDto.Amount > scheduleToPay.AmountDue - scheduleToPay.AmountPaid)
+            scheduleToPay.Status = "Payment Submitted";
+
+            await _loanRepository.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpPost("{scheduleId}/post")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> PostPayment(int loanApplicationId, int scheduleId, [FromBody] PaymentDto paymentDto)
+        {
+            var schedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
+            var scheduleToPost = schedules.FirstOrDefault(s => s.Id == scheduleId);
+
+            if (scheduleToPost == null) return NotFound("Payment schedule not found.");
+            
+            if (scheduleToPost.Status != "Payment Submitted" && scheduleToPost.Status != "Partially Paid")
+                return BadRequest("Schedule must be in Submitted or Partially Paid status to post.");
+
+            if (paymentDto.Amount > scheduleToPost.AmountDue - scheduleToPost.AmountPaid)
             {
                 return BadRequest("Payment amount exceeds the remaining balance for this schedule.");
             }
 
-            scheduleToPay.AmountPaid += paymentDto.Amount;
+            scheduleToPost.AmountPaid += paymentDto.Amount;
             
-            if (scheduleToPay.AmountPaid >= scheduleToPay.AmountDue)
+            if (scheduleToPost.AmountPaid >= scheduleToPost.AmountDue)
             {
-                scheduleToPay.Status = "Paid";
+                scheduleToPost.Status = "Paid";
             }
             else
             {
-                scheduleToPay.Status = "Partially Paid";
+                scheduleToPost.Status = "Partially Paid";
             }
 
             // Update Treasury

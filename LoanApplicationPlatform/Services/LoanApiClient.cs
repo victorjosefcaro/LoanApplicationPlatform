@@ -95,6 +95,12 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> ReleaseFundsAsync(int id)
+        {
+            var response = await _httpClient.PostAsync($"/api/loanapplications/{id}/release", null);
+            return response.IsSuccessStatusCode;
+        }
+
         public async Task<IEnumerable<PaymentScheduleDto>?> GetPaymentSchedulesAsync(int loanApplicationId)
         {
             var response = await _httpClient.GetAsync($"/api/loanapplications/{loanApplicationId}/payments");
@@ -105,9 +111,15 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return null;
         }
 
-        public async Task<bool> SubmitPaymentAsync(int loanApplicationId, int scheduleId, decimal amount)
+        public async Task<bool> SubmitPaymentAsync(int loanApplicationId, int scheduleId)
         {
-            var response = await _httpClient.PostAsJsonAsync($"/api/loanapplications/{loanApplicationId}/payments/{scheduleId}/pay", new { Amount = amount });
+            var response = await _httpClient.PostAsync($"/api/loanapplications/{loanApplicationId}/payments/{scheduleId}/submit", null);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> PostPaymentAsync(int loanApplicationId, int scheduleId, decimal amount)
+        {
+            var response = await _httpClient.PostAsJsonAsync($"/api/loanapplications/{loanApplicationId}/payments/{scheduleId}/post", new { Amount = amount });
             return response.IsSuccessStatusCode;
         }
 

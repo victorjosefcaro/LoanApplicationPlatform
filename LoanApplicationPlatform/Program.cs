@@ -206,17 +206,15 @@ async Task ApplicantMenuAsync()
             if (!int.TryParse(Console.ReadLine(), out var loanId)) break;
             
             var sch = await apiClient.GetPaymentSchedulesAsync(loanId);
-            if (sch == null || !sch.Any(s => s.Status != "Paid")) { Console.WriteLine("\nNo pending schedules to pay."); WaitForKey(); break; }
+            if (sch == null || !sch.Any(s => s.Status != "Paid" && s.Status != "Payment Submitted")) { Console.WriteLine("\nNo pending schedules to pay."); WaitForKey(); break; }
             Console.WriteLine("\nPending Schedules:");
-            foreach (var s in sch.Where(s => s.Status != "Paid")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
+            foreach (var s in sch.Where(s => s.Status != "Paid" && s.Status != "Payment Submitted")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
             
-            Console.Write("\nEnter Schedule ID: ");
+            Console.Write("\nEnter Schedule ID to notify payment sent: ");
             if (!int.TryParse(Console.ReadLine(), out var schId)) break;
-            Console.Write("Enter Payment Amount: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var payAmt)) break;
             
-            var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId, payAmt);
-            Console.WriteLine(paySuccess ? "\nPayment successful!" : "\nPayment failed.");
+            var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId);
+            Console.WriteLine(paySuccess ? "\nPayment notified successfully! Waiting for Admin to post." : "\nPayment notification failed.");
             WaitForKey();
             break;
         case "6": Logout(); break;
@@ -348,11 +346,12 @@ async Task ApproverMenuAsync()
             Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
             Console.WriteLine("\nSelect Status to Apply:");
-            Console.WriteLine("1. Approved");
-            Console.WriteLine("2. Rejected");
+            Console.WriteLine("1. Returned");
+            Console.WriteLine("2. Approved");
+            Console.WriteLine("3. Rejected");
             Console.Write("Choice: ");
             var statChoice = Console.ReadLine();
-            string status = statChoice switch { "1" => "Approved", "2" => "Rejected", _ => "" };
+            string status = statChoice switch { "1" => "Returned", "2" => "Approved", "3" => "Rejected", _ => "" };
             
             Console.Write("Remarks: ");
             var remarks = Console.ReadLine();
@@ -376,7 +375,9 @@ async Task AdminMenuAsync()
     Console.WriteLine("1. View All Applications");
     Console.WriteLine("2. View Treasury Balance");
     Console.WriteLine("3. Create User Account");
-    Console.WriteLine("4. Logout");
+    Console.WriteLine("4. Release Funds for Approved Application");
+    Console.WriteLine("5. Post Pending Payments");
+    Console.WriteLine("6. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
@@ -410,7 +411,54 @@ async Task AdminMenuAsync()
             Console.WriteLine(success ? "\nAccount created successfully!" : $"\nAccount creation failed: {error}");
             WaitForKey();
             break;
-        case "4": Logout(); break;
+        case "4":
+            var appList = await apiClient.GetApplicationsAsync();
+            var approvedList = appList?.Where(a => a.Status == "Approved").ToList();
+            if (approvedList == null || !approvedList.Any())
+            {
+                Console.WriteLine("\nNo approved applications waiting for fund release.");
+                WaitForKey();
+                break;
+            }
+            Console.WriteLine("\nApproved Applications Pending Release:");
+            foreach (var a in approvedList)
+                Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Remarks: {a.Remarks}");
+            
+            Console.Write("\nEnter Application ID to release funds: ");
+            if (!int.TryParse(Console.ReadLine(), out var releaseId)) break;
+            
+            var relSuccess = await apiClient.ReleaseFundsAsync(releaseId);
+            Console.WriteLine(relSuccess ? "\nFunds successfully released! Payment schedules generated." : "\nFailed to release funds (check treasury balance).");
+            WaitForKey();
+            break;
+        case "5":
+            var allAppsForPay = await apiClient.GetApplicationsAsync();
+            if (allAppsForPay == null || !allAppsForPay.Any()) { Console.WriteLine("\nNo applications."); WaitForKey(); break; }
+            
+            Console.WriteLine("\nAll Applications:");
+            foreach (var a in allAppsForPay) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            
+            Console.Write("\nEnter Application ID to check schedules: ");
+            if (!int.TryParse(Console.ReadLine(), out var pLoanId)) break;
+            
+            var pSch = await apiClient.GetPaymentSchedulesAsync(pLoanId);
+            var submittedSchs = pSch?.Where(s => s.Status == "Payment Submitted" || s.Status == "Partially Paid").ToList();
+            if (submittedSchs == null || !submittedSchs.Any()) { Console.WriteLine("\nNo submitted payments for this application."); WaitForKey(); break; }
+            
+            Console.WriteLine("\nSubmitted Schedules:");
+            foreach (var s in submittedSchs)
+                Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, AmountDue: {s.AmountDue:C}, AmountPaid: {s.AmountPaid:C}, Status: {s.Status}");
+                
+            Console.Write("\nEnter Schedule ID to post: ");
+            if (!int.TryParse(Console.ReadLine(), out var pSchId)) break;
+            Console.Write("Enter Verified Payment Amount: ");
+            if (!decimal.TryParse(Console.ReadLine(), out var verifiedAmt)) break;
+            
+            var postSuccess = await apiClient.PostPaymentAsync(pLoanId, pSchId, verifiedAmt);
+            Console.WriteLine(postSuccess ? "\nPayment posted to treasury successfully!" : "\nFailed to post payment.");
+            WaitForKey();
+            break;
+        case "6": Logout(); break;
     }
 }
 

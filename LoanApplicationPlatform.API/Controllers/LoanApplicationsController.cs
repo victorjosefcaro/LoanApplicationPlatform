@@ -191,38 +191,50 @@ namespace LoanApplicationPlatform.API.Controllers
 
             if (application.Status != "Reviewed")
             {
-                return BadRequest("Can only approve/reject applications that have been reviewed.");
+                return BadRequest("Can only process applications that have been reviewed.");
             }
 
             application.Status = approveDto.Status;
             application.Remarks = approveDto.Remarks;
 
-            if (approveDto.Status == "Approved")
+            await _loanRepository.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpPost("{id}/release")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> ReleaseFunds(int id)
+        {
+            var application = await _loanRepository.GetLoanApplicationAsync(id);
+            if (application == null) return NotFound();
+
+            if (application.Status != "Approved")
             {
-                // Treasury Check and Deduction
-                var treasury = await _loanRepository.GetTreasuryAsync();
-                if (treasury == null || treasury.Balance < application.Amount)
-                {
-                    return BadRequest("Insufficient treasury funds to approve this loan.");
-                }
-
-                treasury.Balance -= application.Amount;
-
-                // Generate Payment Schedules (Monthly)
-                decimal monthlyAmount = application.Amount / application.TermInMonths;
-                for (int i = 1; i <= application.TermInMonths; i++)
-                {
-                    _loanRepository.AddPaymentSchedule(new PaymentSchedule
-                    {
-                        LoanApplicationId = application.Id,
-                        DueDate = DateTime.UtcNow.AddMonths(i),
-                        AmountDue = monthlyAmount,
-                        AmountPaid = 0,
-                        Status = "Pending"
-                    });
-                }
+                return BadRequest("Can only release funds for approved applications.");
             }
 
+            var treasury = await _loanRepository.GetTreasuryAsync();
+            if (treasury == null || treasury.Balance < application.Amount)
+            {
+                return BadRequest("Insufficient treasury funds to release this loan.");
+            }
+
+            treasury.Balance -= application.Amount;
+
+            decimal monthlyAmount = application.Amount / application.TermInMonths;
+            for (int i = 1; i <= application.TermInMonths; i++)
+            {
+                _loanRepository.AddPaymentSchedule(new PaymentSchedule
+                {
+                    LoanApplicationId = application.Id,
+                    DueDate = DateTime.UtcNow.AddMonths(i),
+                    AmountDue = monthlyAmount,
+                    AmountPaid = 0,
+                    Status = "Pending"
+                });
+            }
+
+            application.Status = "Released";
             await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
