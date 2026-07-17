@@ -1,6 +1,11 @@
 @LoanApplicationPlatform.API_HostAddress = http://localhost:5131
 
-GET {{LoanApplicationPlatform.API_HostAddress}}/weatherforecast/
+GET {{LoanApplicationPlatform.API_HostAddress}}/api/test/treasury
+Accept: application/json
+
+###
+
+GET {{LoanApplicationPlatform.API_HostAddress}}/api/test/users
 Accept: application/json
 
 ###
