@@ -59,6 +59,18 @@ namespace LoanApplicationPlatform.API.Services
             return await _context.Treasury.FirstOrDefaultAsync();
         }
 
+        public void AddTreasuryTransaction(TreasuryTransaction transaction)
+        {
+            _context.TreasuryTransactions.Add(transaction);
+        }
+
+        public async Task<IEnumerable<TreasuryTransaction>> GetTreasuryTransactionsAsync()
+        {
+            return await _context.TreasuryTransactions
+                .OrderByDescending(t => t.TransactionDate)
+                .ToListAsync();
+        }
+
         public async Task<bool> SaveChangesAsync()
         {
             return (await _context.SaveChangesAsync() >= 0);

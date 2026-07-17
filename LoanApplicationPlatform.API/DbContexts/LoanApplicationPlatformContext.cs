@@ -8,7 +8,8 @@ namespace LoanApplicationPlatform.API.DbContexts
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<LoanApplication> LoanApplications { get; set; } = null!;
         public DbSet<PaymentSchedule> PaymentSchedules { get; set; } = null!;
-        public DbSet<Treasury> Treasury { get; set; } = null!;
+        public DbSet<Treasury> Treasury { get; set; }
+        public DbSet<TreasuryTransaction> TreasuryTransactions { get; set; } = null!;
 
         public LoanApplicationPlatformContext(DbContextOptions<LoanApplicationPlatformContext> options)
             : base(options)

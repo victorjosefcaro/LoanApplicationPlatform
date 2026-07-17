@@ -1,3 +1,4 @@
+using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,9 +36,26 @@ namespace LoanApplicationPlatform.API.Controllers
             if (treasury == null) return NotFound("Treasury record not found.");
             
             treasury.Balance += depositDto.Amount;
+            
+            _loanRepository.AddTreasuryTransaction(new TreasuryTransaction
+            {
+                Amount = depositDto.Amount,
+                TransactionDate = DateTime.UtcNow,
+                Type = "Deposit",
+                ReferenceId = null
+            });
+
             await _loanRepository.SaveChangesAsync();
 
             return Ok(new { balance = treasury.Balance });
+        }
+
+        [HttpGet("transactions")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> GetTransactions()
+        {
+            var transactions = await _loanRepository.GetTreasuryTransactionsAsync();
+            return Ok(transactions);
         }
     }
 }

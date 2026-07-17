@@ -12,6 +12,8 @@ namespace LoanApplicationPlatform.API.Services
         void AddPaymentSchedule(PaymentSchedule paymentSchedule);
         
         Task<Treasury?> GetTreasuryAsync();
+        void AddTreasuryTransaction(TreasuryTransaction transaction);
+        Task<IEnumerable<TreasuryTransaction>> GetTreasuryTransactionsAsync();
         
         Task<bool> SaveChangesAsync();
     }

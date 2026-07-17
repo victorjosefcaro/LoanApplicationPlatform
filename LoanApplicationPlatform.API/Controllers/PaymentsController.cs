@@ -1,5 +1,6 @@
 using AutoMapper;
 using LoanApplicationPlatform.API.Constants;
+using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -98,6 +99,14 @@ namespace LoanApplicationPlatform.API.Controllers
             if (treasury != null)
             {
                 treasury.Balance += paymentDto.Amount;
+                
+                _loanRepository.AddTreasuryTransaction(new TreasuryTransaction
+                {
+                    Amount = paymentDto.Amount,
+                    TransactionDate = DateTime.UtcNow,
+                    Type = "PaymentReceived",
+                    ReferenceId = loanApplicationId
+                });
             }
 
             // Loan Closure check

@@ -222,6 +222,14 @@ namespace LoanApplicationPlatform.API.Controllers
             }
 
             treasury.Balance -= application.Amount;
+            
+            _loanRepository.AddTreasuryTransaction(new TreasuryTransaction
+            {
+                Amount = -application.Amount,
+                TransactionDate = DateTime.UtcNow,
+                Type = "FundRelease",
+                ReferenceId = application.Id
+            });
 
             decimal totalAmountOwed = application.Amount + (application.Amount * application.InterestRate);
             decimal monthlyAmount = totalAmountOwed / application.TermInMonths;

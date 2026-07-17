@@ -13,10 +13,11 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             Console.WriteLine("1. View All Applications");
             Console.WriteLine("2. View Treasury Balance");
             Console.WriteLine("3. Deposit to Treasury");
-            Console.WriteLine("4. Create User Account");
-            Console.WriteLine("5. Release Funds for Approved Application");
-            Console.WriteLine("6. Post Pending Payments");
-            Console.WriteLine("7. Logout");
+            Console.WriteLine("4. View Transaction Ledger");
+            Console.WriteLine("5. Create User Account");
+            Console.WriteLine("6. Release Funds for Approved Application");
+            Console.WriteLine("7. Post Pending Payments");
+            Console.WriteLine("8. Logout");
             Console.Write("\nSelect an option: ");
             
             var choice = Console.ReadLine();
@@ -32,15 +33,18 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     await DepositTreasury(apiClient);
                     break;
                 case "4":
-                    await CreateUser(apiClient);
+                    await ViewLedger(apiClient);
                     break;
                 case "5":
-                    await ReleaseFunds(apiClient);
+                    await CreateUser(apiClient);
                     break;
                 case "6":
-                    await PostPayments(apiClient);
+                    await ReleaseFunds(apiClient);
                     break;
                 case "7":
+                    await PostPayments(apiClient);
+                    break;
+                case "8":
                     logoutCallback();
                     break;
                 default:
@@ -80,6 +84,26 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             var depSuccess = await apiClient.DepositToTreasuryAsync(depositAmt);
             if (depSuccess) ConsoleHelper.PrintSuccess("Successfully deposited funds to Treasury!");
             else ConsoleHelper.PrintError("Failed to deposit funds.");
+        }
+
+        private static async Task ViewLedger(LoanApiClient apiClient)
+        {
+            var transactions = await apiClient.GetTreasuryTransactionsAsync();
+            if (transactions != null && transactions.Any())
+            {
+                Console.WriteLine("\n--- Treasury Transaction Ledger ---");
+                Console.WriteLine($"{"ID",-5} | {"Date (UTC)",-20} | {"Amount",-15} | {"Type",-18} | {"Ref ID",-6}");
+                Console.WriteLine(new string('-', 75));
+                foreach (var t in transactions)
+                {
+                    Console.WriteLine($"{t.Id,-5} | {t.TransactionDate:yyyy-MM-dd HH:mm:ss} | {t.Amount,15:C} | {t.Type,-18} | {t.ReferenceId?.ToString() ?? "N/A",-6}");
+                }
+                ConsoleHelper.WaitForKey();
+            }
+            else
+            {
+                ConsoleHelper.PrintError("No transactions found in the ledger.");
+            }
         }
 
         private static async Task CreateUser(LoanApiClient apiClient)

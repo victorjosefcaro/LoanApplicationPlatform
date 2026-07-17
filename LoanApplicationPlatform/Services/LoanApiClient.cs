@@ -136,8 +136,25 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
 
         public async Task<bool> DepositToTreasuryAsync(decimal amount)
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/treasury/deposit", new { Amount = amount });
+            var response = await _httpClient.PostAsJsonAsync("api/treasury/deposit", new { amount });
             return response.IsSuccessStatusCode;
+        }
+
+        public async Task<IEnumerable<TreasuryTransactionDto>?> GetTreasuryTransactionsAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/treasury/transactions");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<IEnumerable<TreasuryTransactionDto>>();
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public void Dispose()
@@ -145,4 +162,8 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             _httpClient.Dispose();
         }
     }
+
+    public record TreasuryTransactionDto(int Id, DateTime TransactionDate, decimal Amount, string Type, int? ReferenceId);
+    public record ApplicationDto(int Id, decimal Amount, int TermInMonths, string Status, string Remarks, DateTime CreatedAt);
+    public record PaymentScheduleDto(int Id, DateTime DueDate, decimal AmountDue, decimal AmountPaid, string Status);
 }
