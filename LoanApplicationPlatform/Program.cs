@@ -355,12 +355,11 @@ async Task ApproverMenuAsync()
             Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
             Console.WriteLine("\nSelect Status to Apply:");
-            Console.WriteLine("1. Returned");
-            Console.WriteLine("2. Approved");
-            Console.WriteLine("3. Rejected");
+            Console.WriteLine("1. Approved");
+            Console.WriteLine("2. Rejected");
             Console.Write("Choice: ");
             var statChoice = Console.ReadLine();
-            string status = statChoice switch { "1" => "Returned", "2" => "Approved", "3" => "Rejected", _ => "" };
+            string status = statChoice switch { "1" => "Approved", "2" => "Rejected", _ => "" };
             
             Console.Write("Remarks: ");
             var remarks = Console.ReadLine();
