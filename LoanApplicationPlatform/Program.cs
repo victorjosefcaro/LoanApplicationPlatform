@@ -1,83 +1,70 @@
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
+using LoanApplicationPlatform.ConsoleApp.Services;
+using System.IdentityModel.Tokens.Jwt;
 
-var httpClient = new HttpClient
-{
-    // Make sure this matches your API port from launchSettings.json (HTTPS)
-    BaseAddress = new Uri("https://localhost:7103") 
-};
-
-string? jwtToken = null;
+var apiClient = new LoanApiClient("https://localhost:7103");
+string? currentRole = null;
 
 while (true)
 {
     Console.Clear();
     Console.WriteLine("=== Loan Application Platform ===");
-    if (!string.IsNullOrEmpty(jwtToken))
+    if (apiClient.JwtToken != null)
     {
-        Console.WriteLine("[ Status: Logged In ]");
+        Console.WriteLine($"[ Status: Logged In | Role: {currentRole} ]");
     }
     else
     {
         Console.WriteLine("[ Status: NOT Logged In ]");
     }
 
-    Console.WriteLine("\n1. Login");
-    Console.WriteLine("2. Register (Applicant)");
-    Console.WriteLine("3. Test API (Requires Login)");
-    Console.WriteLine("4. Logout");
-    Console.WriteLine("5. Exit");
-    Console.Write("\nSelect an option: ");
-    
-    var choice = Console.ReadLine();
-
-    switch (choice)
+    if (apiClient.JwtToken == null)
     {
-        case "1":
-            await LoginAsync();
-            break;
-        case "2":
-            await RegisterAsync();
-            break;
-        case "3":
-            await TestApiAsync();
-            break;
-        case "4":
-            jwtToken = null;
-            httpClient.DefaultRequestHeaders.Authorization = null;
-            Console.WriteLine("\nLogged out successfully. Press any key...");
-            Console.ReadKey();
-            break;
-        case "5":
-            return;
-        default:
-            Console.WriteLine("\nInvalid option. Press any key...");
-            Console.ReadKey();
-            break;
+        Console.WriteLine("\n1. Login");
+        Console.WriteLine("2. Register (Applicant)");
+        Console.WriteLine("3. Exit");
+        Console.Write("\nSelect an option: ");
+        
+        var choice = Console.ReadLine();
+        switch (choice)
+        {
+            case "1": await LoginAsync(); break;
+            case "2": await RegisterAsync(); break;
+            case "3": return;
+            default: Console.WriteLine("\nInvalid option."); Console.ReadKey(); break;
+        }
+    }
+    else
+    {
+        // Role-based menu delegation
+        if (currentRole == "Applicant") await ApplicantMenuAsync();
+        else if (currentRole == "Reviewer") await ReviewerMenuAsync();
+        else if (currentRole == "Approver") await ApproverMenuAsync();
+        else if (currentRole == "Admin") await AdminMenuAsync();
+        else {
+            Console.WriteLine("Unknown role. Logging out...");
+            Logout();
+        }
     }
 }
 
 async Task LoginAsync()
 {
     Console.Write("Username: ");
-    var username = Console.ReadLine();
+    var username = Console.ReadLine() ?? "";
     Console.Write("Password: ");
-    var password = Console.ReadLine();
+    var password = Console.ReadLine() ?? "";
 
-    var response = await httpClient.PostAsJsonAsync("/api/authentication/authenticate", new { Username = username, Password = password });
-
-    if (response.IsSuccessStatusCode)
+    var (success, error) = await apiClient.LoginAsync(username, password);
+    if (success)
     {
-        jwtToken = await response.Content.ReadAsStringAsync();
-        // Remove quotes from the JSON string response
-        jwtToken = jwtToken.Trim('"');
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
-        Console.WriteLine("\nLogin successful! Token saved. Press any key...");
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(apiClient.JwtToken);
+        currentRole = token.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+        Console.WriteLine("\nLogin successful!");
     }
     else
     {
-        Console.WriteLine($"\nLogin failed: {response.StatusCode}. Press any key...");
+        Console.WriteLine($"\nLogin failed: {error}");
     }
     Console.ReadKey();
 }
@@ -85,44 +72,222 @@ async Task LoginAsync()
 async Task RegisterAsync()
 {
     Console.Write("New Username: ");
-    var username = Console.ReadLine();
+    var username = Console.ReadLine() ?? "";
     Console.Write("New Password: ");
-    var password = Console.ReadLine();
+    var password = Console.ReadLine() ?? "";
 
-    var response = await httpClient.PostAsJsonAsync("/api/authentication/register", new { Username = username, Password = password });
-
-    if (response.IsSuccessStatusCode)
-    {
-        Console.WriteLine("\nRegistration successful! You can now login. Press any key...");
-    }
-    else
-    {
-        var error = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"\nRegistration failed: {response.StatusCode} - {error}. Press any key...");
-    }
+    var (success, error) = await apiClient.RegisterAsync(username, password);
+    if (success) Console.WriteLine("\nRegistration successful! You can now login.");
+    else Console.WriteLine($"\nRegistration failed: {error}");
     Console.ReadKey();
 }
 
-async Task TestApiAsync()
+void Logout()
 {
-    Console.WriteLine("\nFetching users from API...");
-    var response = await httpClient.GetAsync("/api/test/users");
-    
-    if (response.IsSuccessStatusCode)
-    {
-        var content = await response.Content.ReadAsStringAsync();
-        var parsedJson = JsonSerializer.Deserialize<object>(content);
-        var formattedJson = JsonSerializer.Serialize(parsedJson, new JsonSerializerOptions { WriteIndented = true });
-        Console.WriteLine("\nAPI Response:\n" + formattedJson);
-    }
-    else
-    {
-        Console.WriteLine($"\nAPI call failed! Status: {response.StatusCode}");
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            Console.WriteLine("Hint: You are not authorized. Try logging in first.");
-        }
-    }
-    Console.WriteLine("\nPress any key to return...");
+    apiClient.ClearToken();
+    currentRole = null;
+    Console.WriteLine("\nLogged out successfully.");
     Console.ReadKey();
+}
+
+async Task ApplicantMenuAsync()
+{
+    Console.WriteLine("\n--- Applicant Menu ---");
+    Console.WriteLine("1. View My Applications");
+    Console.WriteLine("2. Create New Application");
+    Console.WriteLine("3. Submit Application");
+    Console.WriteLine("4. View Payment Schedules");
+    Console.WriteLine("5. Make a Payment");
+    Console.WriteLine("6. Logout");
+    Console.Write("\nSelect an option: ");
+    
+    var choice = Console.ReadLine();
+    switch (choice)
+    {
+        case "1":
+            var apps = await apiClient.GetApplicationsAsync();
+            if (apps != null && apps.Any())
+            {
+                // Applying LINQ: Order applications by creation date descending
+                var activeApps = apps.OrderByDescending(a => a.CreatedAt).ToList();
+                Console.WriteLine("\nYour Applications:");
+                foreach (var a in activeApps)
+                {
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Term: {a.TermInMonths} mos, Status: {a.Status}");
+                }
+            }
+            else Console.WriteLine("\nNo applications found.");
+            Console.ReadKey();
+            break;
+        case "2":
+            Console.Write("Applicant Name: ");
+            var name = Console.ReadLine();
+            Console.Write("Amount: ");
+            if (!decimal.TryParse(Console.ReadLine(), out var amt)) break;
+            Console.Write("Term (months): ");
+            if (!int.TryParse(Console.ReadLine(), out var term)) break;
+            Console.Write("Monthly Income: ");
+            if (!decimal.TryParse(Console.ReadLine(), out var inc)) break;
+            Console.Write("Purpose: ");
+            var purpose = Console.ReadLine();
+            
+            var success = await apiClient.CreateApplicationAsync(new { ApplicantName = name, Amount = amt, TermInMonths = term, MonthlyIncome = inc, Purpose = purpose });
+            Console.WriteLine(success ? "\nApplication created as Draft!" : "\nFailed to create application.");
+            Console.ReadKey();
+            break;
+        case "3":
+            Console.Write("Enter Application ID to submit: ");
+            if (int.TryParse(Console.ReadLine(), out var appId))
+            {
+                var subSuccess = await apiClient.SubmitApplicationAsync(appId);
+                Console.WriteLine(subSuccess ? "\nApplication submitted!" : "\nFailed to submit application.");
+            }
+            Console.ReadKey();
+            break;
+        case "4":
+            Console.Write("Enter Application ID: ");
+            if (int.TryParse(Console.ReadLine(), out var pid))
+            {
+                var schedules = await apiClient.GetPaymentSchedulesAsync(pid);
+                if (schedules != null && schedules.Any())
+                {
+                    // Applying LINQ: Filter to show only pending schedules to the user
+                    var pending = schedules.Where(s => s.Status != "Paid").ToList();
+                    Console.WriteLine($"\nYou have {pending.Count} pending schedules out of {schedules.Count()} total.");
+                    foreach (var s in schedules)
+                    {
+                        Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}, Paid: {s.AmountPaid:C}, Status: {s.Status}");
+                    }
+                }
+                else Console.WriteLine("\nNo payment schedules found.");
+            }
+            Console.ReadKey();
+            break;
+        case "5":
+            Console.Write("Enter Application ID: ");
+            if (!int.TryParse(Console.ReadLine(), out var loanId)) break;
+            Console.Write("Enter Schedule ID: ");
+            if (!int.TryParse(Console.ReadLine(), out var schId)) break;
+            Console.Write("Enter Payment Amount: ");
+            if (!decimal.TryParse(Console.ReadLine(), out var payAmt)) break;
+            
+            var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId, payAmt);
+            Console.WriteLine(paySuccess ? "\nPayment successful!" : "\nPayment failed.");
+            Console.ReadKey();
+            break;
+        case "6": Logout(); break;
+    }
+}
+
+async Task ReviewerMenuAsync()
+{
+    Console.WriteLine("\n--- Reviewer Menu ---");
+    Console.WriteLine("1. View Submitted Applications");
+    Console.WriteLine("2. Review Application");
+    Console.WriteLine("3. Logout");
+    Console.Write("\nSelect an option: ");
+    
+    var choice = Console.ReadLine();
+    switch (choice)
+    {
+        case "1":
+            var apps = await apiClient.GetApplicationsAsync();
+            if (apps != null && apps.Any())
+            {
+                Console.WriteLine("\nSubmitted Applications:");
+                foreach (var a in apps)
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            }
+            else Console.WriteLine("\nNo applications found.");
+            Console.ReadKey();
+            break;
+        case "2":
+            Console.Write("Enter Application ID: ");
+            if (!int.TryParse(Console.ReadLine(), out var appId)) break;
+            Console.Write("Status (Returned, Reviewed, Rejected): ");
+            var status = Console.ReadLine();
+            Console.Write("Remarks: ");
+            var remarks = Console.ReadLine();
+            
+            var success = await apiClient.ReviewApplicationAsync(appId, status ?? "", remarks);
+            Console.WriteLine(success ? "\nReview submitted!" : "\nFailed to review application.");
+            Console.ReadKey();
+            break;
+        case "3": Logout(); break;
+    }
+}
+
+async Task ApproverMenuAsync()
+{
+    Console.WriteLine("\n--- Approver Menu ---");
+    Console.WriteLine("1. View Reviewed Applications");
+    Console.WriteLine("2. Approve/Reject Application");
+    Console.WriteLine("3. View Treasury Balance");
+    Console.WriteLine("4. Logout");
+    Console.Write("\nSelect an option: ");
+    
+    var choice = Console.ReadLine();
+    switch (choice)
+    {
+        case "1":
+            var apps = await apiClient.GetApplicationsAsync();
+            if (apps != null && apps.Any())
+            {
+                Console.WriteLine("\nReviewed Applications:");
+                foreach (var a in apps)
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            }
+            else Console.WriteLine("\nNo applications found.");
+            Console.ReadKey();
+            break;
+        case "2":
+            Console.Write("Enter Application ID: ");
+            if (!int.TryParse(Console.ReadLine(), out var appId)) break;
+            Console.Write("Status (Approved, Rejected): ");
+            var status = Console.ReadLine();
+            Console.Write("Remarks: ");
+            var remarks = Console.ReadLine();
+            
+            var success = await apiClient.ApproveApplicationAsync(appId, status ?? "", remarks);
+            Console.WriteLine(success ? "\nApproval processed!" : "\nFailed to process approval.");
+            Console.ReadKey();
+            break;
+        case "3":
+            var bal = await apiClient.GetTreasuryBalanceAsync();
+            Console.WriteLine(bal.HasValue ? $"\nTreasury Balance: {bal.Value:C}" : "\nFailed to fetch balance.");
+            Console.ReadKey();
+            break;
+        case "4": Logout(); break;
+    }
+}
+
+async Task AdminMenuAsync()
+{
+    Console.WriteLine("\n--- Admin Menu ---");
+    Console.WriteLine("1. View All Applications");
+    Console.WriteLine("2. View Treasury Balance");
+    Console.WriteLine("3. Logout");
+    Console.Write("\nSelect an option: ");
+    
+    var choice = Console.ReadLine();
+    switch (choice)
+    {
+        case "1":
+            var apps = await apiClient.GetApplicationsAsync();
+            if (apps != null && apps.Any())
+            {
+                Console.WriteLine("\nAll Applications:");
+                foreach (var a in apps)
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            }
+            else Console.WriteLine("\nNo applications found.");
+            Console.ReadKey();
+            break;
+        case "2":
+            var bal = await apiClient.GetTreasuryBalanceAsync();
+            Console.WriteLine(bal.HasValue ? $"\nTreasury Balance: {bal.Value:C}" : "\nFailed to fetch balance.");
+            Console.ReadKey();
+            break;
+        case "3": Logout(); break;
+    }
 }
