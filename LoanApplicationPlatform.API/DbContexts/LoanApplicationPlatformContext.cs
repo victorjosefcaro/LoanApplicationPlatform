@@ -26,7 +26,8 @@ namespace LoanApplicationPlatform.API.DbContexts
 
             // Seed Admin User (Using a real BCrypt hash for "password")
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"), Role = "Admin" }
+                // Pre-computed BCrypt hash for "password" — avoids migration churn from random salt generation
+                new User { Id = 1, Username = "admin", PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.", Role = "Admin" }
             );
         }
     }

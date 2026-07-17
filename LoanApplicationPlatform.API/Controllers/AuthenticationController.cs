@@ -114,6 +114,12 @@ namespace LoanApplicationPlatform.API.Controllers
                 return BadRequest("Username, Password, and Role are required.");
             }
 
+            var validRoles = new[] { "Applicant", "Reviewer", "Approver", "Admin" };
+            if (!validRoles.Contains(requestBody.Role))
+            {
+                return BadRequest($"Invalid role. Valid roles are: {string.Join(", ", validRoles)}.");
+            }
+
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == requestBody.Username);
             if (existingUser != null)
             {
