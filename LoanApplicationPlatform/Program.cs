@@ -3,7 +3,8 @@ using System.IdentityModel.Tokens.Jwt;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-var apiClient = new LoanApiClient("https://localhost:7103");
+const string ApiBaseUrl = "https://localhost:7103";
+using var apiClient = new LoanApiClient(ApiBaseUrl);
 string? currentRole = null;
 
 while (true)
@@ -28,6 +29,8 @@ while (true)
         Console.ResetColor();
     }
 
+    try
+    {
     if (apiClient.JwtToken == null)
     {
         Console.WriteLine("\n1. Login");
@@ -55,6 +58,15 @@ while (true)
             Console.WriteLine("Unknown role. Logging out...");
             Logout();
         }
+    }
+    }
+    catch (HttpRequestException ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"\nConnection error: {ex.Message}");
+        Console.WriteLine("Make sure the API server is running.");
+        Console.ResetColor();
+        WaitForKey();
     }
 }
 
@@ -133,11 +145,11 @@ async Task ApplicantMenuAsync()
             Console.Write("Applicant Name: ");
             var name = Console.ReadLine();
             Console.Write("Amount: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var amt)) break;
+            if (!decimal.TryParse(Console.ReadLine(), out var amt)) { Console.WriteLine("\nInvalid amount."); WaitForKey(); break; }
             Console.Write("Term (months): ");
-            if (!int.TryParse(Console.ReadLine(), out var term)) break;
+            if (!int.TryParse(Console.ReadLine(), out var term)) { Console.WriteLine("\nInvalid term."); WaitForKey(); break; }
             Console.Write("Monthly Income: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var inc)) break;
+            if (!decimal.TryParse(Console.ReadLine(), out var inc)) { Console.WriteLine("\nInvalid income."); WaitForKey(); break; }
             Console.Write("Purpose: ");
             var purpose = Console.ReadLine();
             
@@ -164,11 +176,11 @@ async Task ApplicantMenuAsync()
                 Console.Write("Updated Applicant Name: ");
                 var ename = Console.ReadLine();
                 Console.Write("Updated Amount: ");
-                if (!decimal.TryParse(Console.ReadLine(), out var eamt)) break;
+                if (!decimal.TryParse(Console.ReadLine(), out var eamt)) { Console.WriteLine("\nInvalid amount."); WaitForKey(); break; }
                 Console.Write("Updated Term (months): ");
-                if (!int.TryParse(Console.ReadLine(), out var eterm)) break;
+                if (!int.TryParse(Console.ReadLine(), out var eterm)) { Console.WriteLine("\nInvalid term."); WaitForKey(); break; }
                 Console.Write("Updated Monthly Income: ");
-                if (!decimal.TryParse(Console.ReadLine(), out var einc)) break;
+                if (!decimal.TryParse(Console.ReadLine(), out var einc)) { Console.WriteLine("\nInvalid income."); WaitForKey(); break; }
                 Console.Write("Updated Purpose: ");
                 var epurpose = Console.ReadLine();
                 
@@ -212,7 +224,7 @@ async Task ApplicantMenuAsync()
             foreach (var a in allApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID: ");
-            if (!int.TryParse(Console.ReadLine(), out var loanId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var loanId)) { Console.WriteLine("\nInvalid ID."); WaitForKey(); break; }
             
             var sch = await apiClient.GetPaymentSchedulesAsync(loanId);
             if (sch == null || !sch.Any(s => s.Status != "Paid" && s.Status != "Payment Submitted")) { Console.WriteLine("\nNo pending schedules to pay."); WaitForKey(); break; }
@@ -220,7 +232,7 @@ async Task ApplicantMenuAsync()
             foreach (var s in sch.Where(s => s.Status != "Paid" && s.Status != "Payment Submitted")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
             
             Console.Write("\nEnter Schedule ID to notify payment sent: ");
-            if (!int.TryParse(Console.ReadLine(), out var schId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var schId)) { Console.WriteLine("\nInvalid Schedule ID."); WaitForKey(); break; }
             
             var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId);
             Console.WriteLine(paySuccess ? "\nPayment notified successfully! Waiting for Admin to post." : "\nPayment notification failed.");
@@ -281,7 +293,7 @@ async Task ReviewerMenuAsync()
             foreach (var a in toReview) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             
             Console.Write("\nEnter Application ID: ");
-            if (!int.TryParse(Console.ReadLine(), out var appId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var appId)) { Console.WriteLine("\nInvalid ID."); WaitForKey(); break; }
             Console.WriteLine("\nSelect Status to Apply:");
             Console.WriteLine("1. Returned");
             Console.WriteLine("2. Reviewed");
@@ -353,7 +365,7 @@ async Task ApproverMenuAsync()
             foreach (var a in toApprove) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             
             Console.Write("\nEnter Application ID: ");
-            if (!int.TryParse(Console.ReadLine(), out var appId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var appId)) { Console.WriteLine("\nInvalid ID."); WaitForKey(); break; }
             Console.WriteLine("\nSelect Status to Apply:");
             Console.WriteLine("1. Approved");
             Console.WriteLine("2. Rejected");
@@ -452,7 +464,7 @@ async Task AdminMenuAsync()
                 Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Remarks: {a.Remarks}");
             
             Console.Write("\nEnter Application ID to release funds: ");
-            if (!int.TryParse(Console.ReadLine(), out var releaseId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var releaseId)) { Console.WriteLine("\nInvalid ID."); WaitForKey(); break; }
             
             var relSuccess = await apiClient.ReleaseFundsAsync(releaseId);
             Console.WriteLine(relSuccess ? "\nFunds successfully released! Payment schedules generated." : "\nFailed to release funds (check treasury balance).");
@@ -466,7 +478,7 @@ async Task AdminMenuAsync()
             foreach (var a in allAppsForPay) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID to check schedules: ");
-            if (!int.TryParse(Console.ReadLine(), out var pLoanId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var pLoanId)) { Console.WriteLine("\nInvalid ID."); WaitForKey(); break; }
             
             var pSch = await apiClient.GetPaymentSchedulesAsync(pLoanId);
             var submittedSchs = pSch?.Where(s => s.Status == "Payment Submitted" || s.Status == "Partially Paid").ToList();
@@ -477,9 +489,9 @@ async Task AdminMenuAsync()
                 Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, AmountDue: {s.AmountDue:C}, AmountPaid: {s.AmountPaid:C}, Status: {s.Status}");
                 
             Console.Write("\nEnter Schedule ID to post: ");
-            if (!int.TryParse(Console.ReadLine(), out var pSchId)) break;
+            if (!int.TryParse(Console.ReadLine(), out var pSchId)) { Console.WriteLine("\nInvalid Schedule ID."); WaitForKey(); break; }
             Console.Write("Enter Verified Payment Amount: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var verifiedAmt)) break;
+            if (!decimal.TryParse(Console.ReadLine(), out var verifiedAmt)) { Console.WriteLine("\nInvalid amount."); WaitForKey(); break; }
             
             var postSuccess = await apiClient.PostPaymentAsync(pLoanId, pSchId, verifiedAmt);
             Console.WriteLine(postSuccess ? "\nPayment posted to treasury successfully!" : "\nFailed to post payment.");

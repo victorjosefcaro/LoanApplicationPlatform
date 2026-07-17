@@ -5,7 +5,7 @@ using LoanApplicationPlatform.ConsoleApp.Models;
 
 namespace LoanApplicationPlatform.ConsoleApp.Services
 {
-    public class LoanApiClient
+    public class LoanApiClient : IDisposable
     {
         private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions;
@@ -138,6 +138,11 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
         {
             var response = await _httpClient.PostAsJsonAsync("/api/treasury/deposit", new { Amount = amount });
             return response.IsSuccessStatusCode;
+        }
+
+        public void Dispose()
+        {
+            _httpClient.Dispose();
         }
     }
 }
