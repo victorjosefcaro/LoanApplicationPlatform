@@ -97,9 +97,10 @@ async Task ApplicantMenuAsync()
     Console.WriteLine("\n--- Applicant Menu ---");
     Console.WriteLine("1. View My Applications");
     Console.WriteLine("2. Create & Submit Application");
-    Console.WriteLine("3. View Payment Schedules");
-    Console.WriteLine("4. Make a Payment");
-    Console.WriteLine("5. Logout");
+    Console.WriteLine("3. Edit & Resubmit Returned Application");
+    Console.WriteLine("4. View Payment Schedules");
+    Console.WriteLine("5. Make a Payment");
+    Console.WriteLine("6. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
@@ -109,12 +110,11 @@ async Task ApplicantMenuAsync()
             var apps = await apiClient.GetApplicationsAsync();
             if (apps != null && apps.Any())
             {
-                // Applying LINQ: Order applications by creation date descending
                 var activeApps = apps.OrderByDescending(a => a.CreatedAt).ToList();
                 Console.WriteLine("\nYour Applications:");
                 foreach (var a in activeApps)
                 {
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Term: {a.TermInMonths} mos, Status: {a.Status}");
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Term: {a.TermInMonths} mos, Status: {a.Status}, Remarks: {a.Remarks}");
                 }
             }
             else Console.WriteLine("\nNo applications found.");
@@ -137,13 +137,54 @@ async Task ApplicantMenuAsync()
             WaitForKey();
             break;
         case "3":
-            Console.Write("Enter Application ID: ");
+            var retApps = await apiClient.GetApplicationsAsync();
+            var returned = retApps?.Where(a => a.Status == "Returned").ToList();
+            if (returned == null || !returned.Any()) {
+                Console.WriteLine("\nYou have no returned applications to edit.");
+                WaitForKey();
+                break;
+            }
+            Console.WriteLine("\nReturned Applications:");
+            foreach (var a in returned) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Remarks: {a.Remarks}");
+            
+            Console.Write("\nEnter Application ID to edit: ");
+            if (int.TryParse(Console.ReadLine(), out var editId))
+            {
+                if (!returned.Any(a => a.Id == editId)) { Console.WriteLine("Invalid ID."); WaitForKey(); break; }
+                
+                Console.Write("Updated Applicant Name: ");
+                var ename = Console.ReadLine();
+                Console.Write("Updated Amount: ");
+                if (!decimal.TryParse(Console.ReadLine(), out var eamt)) break;
+                Console.Write("Updated Term (months): ");
+                if (!int.TryParse(Console.ReadLine(), out var eterm)) break;
+                Console.Write("Updated Monthly Income: ");
+                if (!decimal.TryParse(Console.ReadLine(), out var einc)) break;
+                Console.Write("Updated Purpose: ");
+                var epurpose = Console.ReadLine();
+                
+                var upSuccess = await apiClient.UpdateApplicationAsync(editId, new { ApplicantName = ename, Amount = eamt, TermInMonths = eterm, MonthlyIncome = einc, Purpose = epurpose });
+                if (upSuccess) {
+                    var subSuccess = await apiClient.SubmitApplicationAsync(editId);
+                    Console.WriteLine(subSuccess ? "\nApplication successfully updated and resubmitted!" : "\nUpdated successfully, but failed to resubmit (check income requirements).");
+                } else {
+                    Console.WriteLine("\nFailed to update application.");
+                }
+            }
+            WaitForKey();
+            break;
+        case "4":
+            var appList = await apiClient.GetApplicationsAsync();
+            if (appList == null || !appList.Any()) { Console.WriteLine("\nYou have no applications."); WaitForKey(); break; }
+            Console.WriteLine("\nYour Applications:");
+            foreach (var a in appList) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            
+            Console.Write("\nEnter Application ID: ");
             if (int.TryParse(Console.ReadLine(), out var pid))
             {
                 var schedules = await apiClient.GetPaymentSchedulesAsync(pid);
                 if (schedules != null && schedules.Any())
                 {
-                    // Applying LINQ: Filter to show only pending schedules to the user
                     var pending = schedules.Where(s => s.Status != "Paid").ToList();
                     Console.WriteLine($"\nYou have {pending.Count} pending schedules out of {schedules.Count()} total.");
                     foreach (var s in schedules)
@@ -155,10 +196,21 @@ async Task ApplicantMenuAsync()
             }
             WaitForKey();
             break;
-        case "4":
-            Console.Write("Enter Application ID: ");
+        case "5":
+            var allApps = await apiClient.GetApplicationsAsync();
+            if (allApps == null || !allApps.Any()) { Console.WriteLine("\nYou have no applications."); WaitForKey(); break; }
+            Console.WriteLine("\nYour Applications:");
+            foreach (var a in allApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            
+            Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var loanId)) break;
-            Console.Write("Enter Schedule ID: ");
+            
+            var sch = await apiClient.GetPaymentSchedulesAsync(loanId);
+            if (sch == null || !sch.Any(s => s.Status != "Paid")) { Console.WriteLine("\nNo pending schedules to pay."); WaitForKey(); break; }
+            Console.WriteLine("\nPending Schedules:");
+            foreach (var s in sch.Where(s => s.Status != "Paid")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
+            
+            Console.Write("\nEnter Schedule ID: ");
             if (!int.TryParse(Console.ReadLine(), out var schId)) break;
             Console.Write("Enter Payment Amount: ");
             if (!decimal.TryParse(Console.ReadLine(), out var payAmt)) break;
@@ -167,7 +219,7 @@ async Task ApplicantMenuAsync()
             Console.WriteLine(paySuccess ? "\nPayment successful!" : "\nPayment failed.");
             WaitForKey();
             break;
-        case "5": Logout(); break;
+        case "6": Logout(); break;
     }
 }
 
@@ -188,13 +240,18 @@ async Task ReviewerMenuAsync()
             {
                 Console.WriteLine("\nSubmitted Applications:");
                 foreach (var a in apps)
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             }
             else Console.WriteLine("\nNo applications found.");
             WaitForKey();
             break;
         case "2":
-            Console.Write("Enter Application ID: ");
+            var revApps = await apiClient.GetApplicationsAsync();
+            if (revApps == null || !revApps.Any()) { Console.WriteLine("\nNo applications to review."); WaitForKey(); break; }
+            Console.WriteLine("\nApplications to Review:");
+            foreach (var a in revApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            
+            Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
             Console.WriteLine("\nSelect Status to Apply:");
             Console.WriteLine("1. Returned");
@@ -233,13 +290,18 @@ async Task ApproverMenuAsync()
             {
                 Console.WriteLine("\nReviewed Applications:");
                 foreach (var a in apps)
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             }
             else Console.WriteLine("\nNo applications found.");
             WaitForKey();
             break;
         case "2":
-            Console.Write("Enter Application ID: ");
+            var appApps = await apiClient.GetApplicationsAsync();
+            if (appApps == null || !appApps.Any()) { Console.WriteLine("\nNo applications to approve."); WaitForKey(); break; }
+            Console.WriteLine("\nApplications to Approve:");
+            foreach (var a in appApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            
+            Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
             Console.WriteLine("\nSelect Status to Apply:");
             Console.WriteLine("1. Approved");
@@ -282,7 +344,7 @@ async Task AdminMenuAsync()
             {
                 Console.WriteLine("\nAll Applications:");
                 foreach (var a in apps)
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             }
             else Console.WriteLine("\nNo applications found.");
             WaitForKey();

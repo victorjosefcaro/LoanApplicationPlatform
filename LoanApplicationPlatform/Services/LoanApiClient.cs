@@ -71,6 +71,12 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> UpdateApplicationAsync(int id, object applicationData)
+        {
+            var response = await _httpClient.PutAsJsonAsync($"/api/loanapplications/{id}", applicationData);
+            return response.IsSuccessStatusCode;
+        }
+
         public async Task<bool> SubmitApplicationAsync(int id)
         {
             var response = await _httpClient.PatchAsync($"/api/loanapplications/{id}/submit", null);
