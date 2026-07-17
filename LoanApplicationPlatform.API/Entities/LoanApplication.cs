@@ -22,6 +22,7 @@ namespace LoanApplicationPlatform.API.Entities
         public decimal Amount { get; set; }
         public int TermInMonths { get; set; }
         public decimal MonthlyIncome { get; set; }
+        public decimal InterestRate { get; set; }
 
         [MaxLength(500)]
         public string Purpose { get; set; } = string.Empty;

@@ -99,6 +99,17 @@ namespace LoanApplicationPlatform.API.Controllers
                 treasury.Balance += paymentDto.Amount;
             }
 
+            // Loan Closure check
+            var allSchedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
+            if (allSchedules.All(s => s.Status == "Paid"))
+            {
+                var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
+                if (application != null)
+                {
+                    application.Status = "Completed";
+                }
+            }
+
             await _loanRepository.SaveChangesAsync();
             return NoContent();
         }

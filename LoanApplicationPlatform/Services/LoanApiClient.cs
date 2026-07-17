@@ -128,10 +128,16 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             var response = await _httpClient.GetAsync("/api/treasury/balance");
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadFromJsonAsync<JsonElement>(_jsonOptions);
-                return content.GetProperty("balance").GetDecimal();
+                var dict = await response.Content.ReadFromJsonAsync<Dictionary<string, decimal>>();
+                return dict?["balance"];
             }
             return null;
+        }
+
+        public async Task<bool> DepositToTreasuryAsync(decimal amount)
+        {
+            var response = await _httpClient.PostAsJsonAsync("/api/treasury/deposit", new { Amount = amount });
+            return response.IsSuccessStatusCode;
         }
     }
 }

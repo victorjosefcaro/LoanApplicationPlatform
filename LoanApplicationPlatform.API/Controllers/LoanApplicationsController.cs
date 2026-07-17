@@ -84,6 +84,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var application = _mapper.Map<LoanApplication>(applicationDto);
             application.ApplicantId = int.Parse(userIdStr);
             application.Status = "Submitted";
+            application.InterestRate = 0.05m; // Flat 5% interest rate
             application.CreatedAt = DateTime.UtcNow;
 
             _loanRepository.AddLoanApplication(application);
@@ -221,7 +222,8 @@ namespace LoanApplicationPlatform.API.Controllers
 
             treasury.Balance -= application.Amount;
 
-            decimal monthlyAmount = application.Amount / application.TermInMonths;
+            decimal totalAmountOwed = application.Amount + (application.Amount * application.InterestRate);
+            decimal monthlyAmount = totalAmountOwed / application.TermInMonths;
             for (int i = 1; i <= application.TermInMonths; i++)
             {
                 _loanRepository.AddPaymentSchedule(new PaymentSchedule

@@ -374,10 +374,11 @@ async Task AdminMenuAsync()
     Console.WriteLine("\n--- Admin Menu ---");
     Console.WriteLine("1. View All Applications");
     Console.WriteLine("2. View Treasury Balance");
-    Console.WriteLine("3. Create User Account");
-    Console.WriteLine("4. Release Funds for Approved Application");
-    Console.WriteLine("5. Post Pending Payments");
-    Console.WriteLine("6. Logout");
+    Console.WriteLine("3. Deposit to Treasury");
+    Console.WriteLine("4. Create User Account");
+    Console.WriteLine("5. Release Funds for Approved Application");
+    Console.WriteLine("6. Post Pending Payments");
+    Console.WriteLine("7. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
@@ -400,6 +401,18 @@ async Task AdminMenuAsync()
             WaitForKey();
             break;
         case "3":
+            Console.Write("Enter Amount to Deposit: ");
+            if (!decimal.TryParse(Console.ReadLine(), out var depositAmt) || depositAmt <= 0)
+            {
+                Console.WriteLine("\nInvalid deposit amount.");
+                WaitForKey();
+                break;
+            }
+            var depSuccess = await apiClient.DepositToTreasuryAsync(depositAmt);
+            Console.WriteLine(depSuccess ? "\nSuccessfully deposited funds to Treasury!" : "\nFailed to deposit funds.");
+            WaitForKey();
+            break;
+        case "4":
             Console.Write("New Username: ");
             var username = Console.ReadLine() ?? "";
             Console.Write("New Password: ");
@@ -411,7 +424,7 @@ async Task AdminMenuAsync()
             Console.WriteLine(success ? "\nAccount created successfully!" : $"\nAccount creation failed: {error}");
             WaitForKey();
             break;
-        case "4":
+        case "5":
             var appList = await apiClient.GetApplicationsAsync();
             var approvedList = appList?.Where(a => a.Status == "Approved").ToList();
             if (approvedList == null || !approvedList.Any())
@@ -431,7 +444,7 @@ async Task AdminMenuAsync()
             Console.WriteLine(relSuccess ? "\nFunds successfully released! Payment schedules generated." : "\nFailed to release funds (check treasury balance).");
             WaitForKey();
             break;
-        case "5":
+        case "6":
             var allAppsForPay = await apiClient.GetApplicationsAsync();
             if (allAppsForPay == null || !allAppsForPay.Any()) { Console.WriteLine("\nNo applications."); WaitForKey(); break; }
             
@@ -458,7 +471,7 @@ async Task AdminMenuAsync()
             Console.WriteLine(postSuccess ? "\nPayment posted to treasury successfully!" : "\nFailed to post payment.");
             WaitForKey();
             break;
-        case "6": Logout(); break;
+        case "7": Logout(); break;
     }
 }
 

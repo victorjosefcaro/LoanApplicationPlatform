@@ -24,5 +24,19 @@ namespace LoanApplicationPlatform.API.Controllers
             
             return Ok(new { balance = treasury.Balance });
         }
+
+        [HttpPost("deposit")]
+        public async Task<ActionResult> DepositFunds([FromBody] LoanApplicationPlatform.API.Models.PaymentDto depositDto)
+        {
+            if (depositDto.Amount <= 0) return BadRequest("Deposit amount must be positive.");
+
+            var treasury = await _loanRepository.GetTreasuryAsync();
+            if (treasury == null) return NotFound("Treasury record not found.");
+            
+            treasury.Balance += depositDto.Amount;
+            await _loanRepository.SaveChangesAsync();
+
+            return Ok(new { balance = treasury.Balance });
+        }
     }
 }
