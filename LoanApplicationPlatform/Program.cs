@@ -1,6 +1,8 @@
 using LoanApplicationPlatform.ConsoleApp.Services;
 using System.IdentityModel.Tokens.Jwt;
 
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+
 var apiClient = new LoanApiClient("https://localhost:7103");
 string? currentRole = null;
 
@@ -94,11 +96,10 @@ async Task ApplicantMenuAsync()
 {
     Console.WriteLine("\n--- Applicant Menu ---");
     Console.WriteLine("1. View My Applications");
-    Console.WriteLine("2. Create New Application");
-    Console.WriteLine("3. Submit Application");
-    Console.WriteLine("4. View Payment Schedules");
-    Console.WriteLine("5. Make a Payment");
-    Console.WriteLine("6. Logout");
+    Console.WriteLine("2. Create & Submit Application");
+    Console.WriteLine("3. View Payment Schedules");
+    Console.WriteLine("4. Make a Payment");
+    Console.WriteLine("5. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
@@ -132,19 +133,10 @@ async Task ApplicantMenuAsync()
             var purpose = Console.ReadLine();
             
             var success = await apiClient.CreateApplicationAsync(new { ApplicantName = name, Amount = amt, TermInMonths = term, MonthlyIncome = inc, Purpose = purpose });
-            Console.WriteLine(success ? "\nApplication created as Draft!" : "\nFailed to create application.");
+            Console.WriteLine(success ? "\nApplication successfully created and submitted!" : "\nFailed to create application (check income requirements).");
             WaitForKey();
             break;
         case "3":
-            Console.Write("Enter Application ID to submit: ");
-            if (int.TryParse(Console.ReadLine(), out var appId))
-            {
-                var subSuccess = await apiClient.SubmitApplicationAsync(appId);
-                Console.WriteLine(subSuccess ? "\nApplication submitted!" : "\nFailed to submit application.");
-            }
-            WaitForKey();
-            break;
-        case "4":
             Console.Write("Enter Application ID: ");
             if (int.TryParse(Console.ReadLine(), out var pid))
             {
@@ -163,7 +155,7 @@ async Task ApplicantMenuAsync()
             }
             WaitForKey();
             break;
-        case "5":
+        case "4":
             Console.Write("Enter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var loanId)) break;
             Console.Write("Enter Schedule ID: ");
@@ -175,7 +167,7 @@ async Task ApplicantMenuAsync()
             Console.WriteLine(paySuccess ? "\nPayment successful!" : "\nPayment failed.");
             WaitForKey();
             break;
-        case "6": Logout(); break;
+        case "5": Logout(); break;
     }
 }
 
@@ -204,12 +196,18 @@ async Task ReviewerMenuAsync()
         case "2":
             Console.Write("Enter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
-            Console.Write("Status (Returned, Reviewed, Rejected): ");
-            var status = Console.ReadLine();
+            Console.WriteLine("\nSelect Status to Apply:");
+            Console.WriteLine("1. Returned");
+            Console.WriteLine("2. Reviewed");
+            Console.WriteLine("3. Rejected");
+            Console.Write("Choice: ");
+            var statChoice = Console.ReadLine();
+            string status = statChoice switch { "1" => "Returned", "2" => "Reviewed", "3" => "Rejected", _ => "" };
+            
             Console.Write("Remarks: ");
             var remarks = Console.ReadLine();
             
-            var success = await apiClient.ReviewApplicationAsync(appId, status ?? "", remarks);
+            var success = await apiClient.ReviewApplicationAsync(appId, status, remarks);
             Console.WriteLine(success ? "\nReview submitted!" : "\nFailed to review application.");
             WaitForKey();
             break;
@@ -243,12 +241,17 @@ async Task ApproverMenuAsync()
         case "2":
             Console.Write("Enter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
-            Console.Write("Status (Approved, Rejected): ");
-            var status = Console.ReadLine();
+            Console.WriteLine("\nSelect Status to Apply:");
+            Console.WriteLine("1. Approved");
+            Console.WriteLine("2. Rejected");
+            Console.Write("Choice: ");
+            var statChoice = Console.ReadLine();
+            string status = statChoice switch { "1" => "Approved", "2" => "Rejected", _ => "" };
+            
             Console.Write("Remarks: ");
             var remarks = Console.ReadLine();
             
-            var success = await apiClient.ApproveApplicationAsync(appId, status ?? "", remarks);
+            var success = await apiClient.ApproveApplicationAsync(appId, status, remarks);
             Console.WriteLine(success ? "\nApproval processed!" : "\nFailed to process approval.");
             WaitForKey();
             break;

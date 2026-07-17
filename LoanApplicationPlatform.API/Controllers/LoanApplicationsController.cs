@@ -78,9 +78,18 @@ namespace LoanApplicationPlatform.API.Controllers
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdStr == null) return Unauthorized();
 
+            if (applicationDto.TermInMonths > 0)
+            {
+                decimal estimatedMonthlyPayment = applicationDto.Amount / applicationDto.TermInMonths;
+                if (estimatedMonthlyPayment > applicationDto.MonthlyIncome)
+                {
+                    return BadRequest($"Submission rejected: Your monthly income ({applicationDto.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.");
+                }
+            }
+
             var application = _mapper.Map<LoanApplication>(applicationDto);
             application.ApplicantId = int.Parse(userIdStr);
-            application.Status = "Draft";
+            application.Status = "Submitted";
             application.CreatedAt = DateTime.UtcNow;
 
             _loanRepository.AddLoanApplication(application);
