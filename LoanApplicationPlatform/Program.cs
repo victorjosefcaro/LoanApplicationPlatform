@@ -30,7 +30,7 @@ while (true)
             case "1": await LoginAsync(); break;
             case "2": await RegisterAsync(); break;
             case "3": return;
-            default: Console.WriteLine("\nInvalid option."); Console.ReadKey(); break;
+            default: Console.WriteLine("\nInvalid option."); WaitForKey(); break;
         }
     }
     else
@@ -66,7 +66,7 @@ async Task LoginAsync()
     {
         Console.WriteLine($"\nLogin failed: {error}");
     }
-    Console.ReadKey();
+    WaitForKey();
 }
 
 async Task RegisterAsync()
@@ -79,7 +79,7 @@ async Task RegisterAsync()
     var (success, error) = await apiClient.RegisterAsync(username, password);
     if (success) Console.WriteLine("\nRegistration successful! You can now login.");
     else Console.WriteLine($"\nRegistration failed: {error}");
-    Console.ReadKey();
+    WaitForKey();
 }
 
 void Logout()
@@ -87,7 +87,7 @@ void Logout()
     apiClient.ClearToken();
     currentRole = null;
     Console.WriteLine("\nLogged out successfully.");
-    Console.ReadKey();
+    WaitForKey();
 }
 
 async Task ApplicantMenuAsync()
@@ -117,7 +117,7 @@ async Task ApplicantMenuAsync()
                 }
             }
             else Console.WriteLine("\nNo applications found.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "2":
             Console.Write("Applicant Name: ");
@@ -133,7 +133,7 @@ async Task ApplicantMenuAsync()
             
             var success = await apiClient.CreateApplicationAsync(new { ApplicantName = name, Amount = amt, TermInMonths = term, MonthlyIncome = inc, Purpose = purpose });
             Console.WriteLine(success ? "\nApplication created as Draft!" : "\nFailed to create application.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "3":
             Console.Write("Enter Application ID to submit: ");
@@ -142,7 +142,7 @@ async Task ApplicantMenuAsync()
                 var subSuccess = await apiClient.SubmitApplicationAsync(appId);
                 Console.WriteLine(subSuccess ? "\nApplication submitted!" : "\nFailed to submit application.");
             }
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "4":
             Console.Write("Enter Application ID: ");
@@ -161,7 +161,7 @@ async Task ApplicantMenuAsync()
                 }
                 else Console.WriteLine("\nNo payment schedules found.");
             }
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "5":
             Console.Write("Enter Application ID: ");
@@ -173,7 +173,7 @@ async Task ApplicantMenuAsync()
             
             var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId, payAmt);
             Console.WriteLine(paySuccess ? "\nPayment successful!" : "\nPayment failed.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "6": Logout(); break;
     }
@@ -199,7 +199,7 @@ async Task ReviewerMenuAsync()
                     Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             }
             else Console.WriteLine("\nNo applications found.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "2":
             Console.Write("Enter Application ID: ");
@@ -211,7 +211,7 @@ async Task ReviewerMenuAsync()
             
             var success = await apiClient.ReviewApplicationAsync(appId, status ?? "", remarks);
             Console.WriteLine(success ? "\nReview submitted!" : "\nFailed to review application.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "3": Logout(); break;
     }
@@ -238,7 +238,7 @@ async Task ApproverMenuAsync()
                     Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             }
             else Console.WriteLine("\nNo applications found.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "2":
             Console.Write("Enter Application ID: ");
@@ -250,12 +250,12 @@ async Task ApproverMenuAsync()
             
             var success = await apiClient.ApproveApplicationAsync(appId, status ?? "", remarks);
             Console.WriteLine(success ? "\nApproval processed!" : "\nFailed to process approval.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "3":
             var bal = await apiClient.GetTreasuryBalanceAsync();
             Console.WriteLine(bal.HasValue ? $"\nTreasury Balance: {bal.Value:C}" : "\nFailed to fetch balance.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "4": Logout(); break;
     }
@@ -266,7 +266,8 @@ async Task AdminMenuAsync()
     Console.WriteLine("\n--- Admin Menu ---");
     Console.WriteLine("1. View All Applications");
     Console.WriteLine("2. View Treasury Balance");
-    Console.WriteLine("3. Logout");
+    Console.WriteLine("3. Create User Account");
+    Console.WriteLine("4. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
@@ -281,13 +282,31 @@ async Task AdminMenuAsync()
                     Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             }
             else Console.WriteLine("\nNo applications found.");
-            Console.ReadKey();
+            WaitForKey();
             break;
         case "2":
             var bal = await apiClient.GetTreasuryBalanceAsync();
             Console.WriteLine(bal.HasValue ? $"\nTreasury Balance: {bal.Value:C}" : "\nFailed to fetch balance.");
-            Console.ReadKey();
+            WaitForKey();
             break;
-        case "3": Logout(); break;
+        case "3":
+            Console.Write("New Username: ");
+            var username = Console.ReadLine() ?? "";
+            Console.Write("New Password: ");
+            var password = Console.ReadLine() ?? "";
+            Console.Write("Role (Applicant, Reviewer, Approver, Admin): ");
+            var role = Console.ReadLine() ?? "";
+            
+            var (success, error) = await apiClient.AdminRegisterUserAsync(username, password, role);
+            Console.WriteLine(success ? "\nAccount created successfully!" : $"\nAccount creation failed: {error}");
+            WaitForKey();
+            break;
+        case "4": Logout(); break;
     }
+}
+
+void WaitForKey()
+{
+    Console.WriteLine("\nPress any key to continue...");
+    Console.ReadKey();
 }

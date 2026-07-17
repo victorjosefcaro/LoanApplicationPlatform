@@ -48,6 +48,13 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return (false, await response.Content.ReadAsStringAsync());
         }
 
+        public async Task<(bool IsSuccess, string? ErrorMessage)> AdminRegisterUserAsync(string username, string password, string role)
+        {
+            var response = await _httpClient.PostAsJsonAsync("/api/authentication/admin/register", new { Username = username, Password = password, Role = role });
+            if (response.IsSuccessStatusCode) return (true, null);
+            return (false, await response.Content.ReadAsStringAsync());
+        }
+
         public async Task<IEnumerable<LoanApplicationDto>?> GetApplicationsAsync()
         {
             var response = await _httpClient.GetAsync("/api/loanapplications");
