@@ -37,16 +37,10 @@ namespace LoanApplicationPlatform.API.Controllers
             {
                 applications = await _loanRepository.GetLoanApplicationsAsync(applicantId: userId);
             }
-            else if (role == "Reviewer")
+            else 
             {
-                applications = await _loanRepository.GetLoanApplicationsAsync(status: "Submitted");
-            }
-            else if (role == "Approver")
-            {
-                applications = await _loanRepository.GetLoanApplicationsAsync(status: "Reviewed");
-            }
-            else // Admin
-            {
+                // Reviewers, Approvers, and Admins can fetch all historical applications
+                // Filtering into specific buckets (Approved, Rejected, Pending) is handled by the client
                 applications = await _loanRepository.GetLoanApplicationsAsync();
             }
 

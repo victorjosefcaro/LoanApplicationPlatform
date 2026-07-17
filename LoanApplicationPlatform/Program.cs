@@ -226,30 +226,52 @@ async Task ApplicantMenuAsync()
 async Task ReviewerMenuAsync()
 {
     Console.WriteLine("\n--- Reviewer Menu ---");
-    Console.WriteLine("1. View Submitted Applications");
-    Console.WriteLine("2. Review Application");
-    Console.WriteLine("3. Logout");
+    Console.WriteLine("1. View Applications Pending Review");
+    Console.WriteLine("2. View Approved Applications");
+    Console.WriteLine("3. View Rejected Applications");
+    Console.WriteLine("4. Process an Application");
+    Console.WriteLine("5. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
+    var apps = await apiClient.GetApplicationsAsync();
     switch (choice)
     {
         case "1":
-            var apps = await apiClient.GetApplicationsAsync();
-            if (apps != null && apps.Any())
+            var pending = apps?.Where(a => a.Status == "Submitted").ToList();
+            if (pending != null && pending.Any())
             {
-                Console.WriteLine("\nSubmitted Applications:");
-                foreach (var a in apps)
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+                Console.WriteLine("\nApplications Pending Review:");
+                foreach (var a in pending) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             }
             else Console.WriteLine("\nNo applications found.");
             WaitForKey();
             break;
         case "2":
-            var revApps = await apiClient.GetApplicationsAsync();
-            if (revApps == null || !revApps.Any()) { Console.WriteLine("\nNo applications to review."); WaitForKey(); break; }
+            var approved = apps?.Where(a => a.Status == "Approved").ToList();
+            if (approved != null && approved.Any())
+            {
+                Console.WriteLine("\nApproved Applications (Historical):");
+                foreach (var a in approved) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            }
+            else Console.WriteLine("\nNo approved applications found.");
+            WaitForKey();
+            break;
+        case "3":
+            var rejected = apps?.Where(a => a.Status == "Rejected").ToList();
+            if (rejected != null && rejected.Any())
+            {
+                Console.WriteLine("\nRejected Applications (Historical):");
+                foreach (var a in rejected) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            }
+            else Console.WriteLine("\nNo rejected applications found.");
+            WaitForKey();
+            break;
+        case "4":
+            var toReview = apps?.Where(a => a.Status == "Submitted").ToList();
+            if (toReview == null || !toReview.Any()) { Console.WriteLine("\nNo applications to review."); WaitForKey(); break; }
             Console.WriteLine("\nApplications to Review:");
-            foreach (var a in revApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            foreach (var a in toReview) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             
             Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
@@ -268,38 +290,60 @@ async Task ReviewerMenuAsync()
             Console.WriteLine(success ? "\nReview submitted!" : "\nFailed to review application.");
             WaitForKey();
             break;
-        case "3": Logout(); break;
+        case "5": Logout(); break;
     }
 }
 
 async Task ApproverMenuAsync()
 {
     Console.WriteLine("\n--- Approver Menu ---");
-    Console.WriteLine("1. View Reviewed Applications");
-    Console.WriteLine("2. Approve/Reject Application");
-    Console.WriteLine("3. View Treasury Balance");
-    Console.WriteLine("4. Logout");
+    Console.WriteLine("1. View Applications Pending Approval");
+    Console.WriteLine("2. View Approved Applications");
+    Console.WriteLine("3. View Rejected Applications");
+    Console.WriteLine("4. Process an Application");
+    Console.WriteLine("5. View Treasury Balance");
+    Console.WriteLine("6. Logout");
     Console.Write("\nSelect an option: ");
     
     var choice = Console.ReadLine();
+    var apps = await apiClient.GetApplicationsAsync();
     switch (choice)
     {
         case "1":
-            var apps = await apiClient.GetApplicationsAsync();
-            if (apps != null && apps.Any())
+            var pending = apps?.Where(a => a.Status == "Reviewed").ToList();
+            if (pending != null && pending.Any())
             {
-                Console.WriteLine("\nReviewed Applications:");
-                foreach (var a in apps)
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+                Console.WriteLine("\nApplications Pending Approval:");
+                foreach (var a in pending) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             }
             else Console.WriteLine("\nNo applications found.");
             WaitForKey();
             break;
         case "2":
-            var appApps = await apiClient.GetApplicationsAsync();
-            if (appApps == null || !appApps.Any()) { Console.WriteLine("\nNo applications to approve."); WaitForKey(); break; }
+            var approved = apps?.Where(a => a.Status == "Approved").ToList();
+            if (approved != null && approved.Any())
+            {
+                Console.WriteLine("\nApproved Applications (Historical):");
+                foreach (var a in approved) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            }
+            else Console.WriteLine("\nNo approved applications found.");
+            WaitForKey();
+            break;
+        case "3":
+            var rejected = apps?.Where(a => a.Status == "Rejected").ToList();
+            if (rejected != null && rejected.Any())
+            {
+                Console.WriteLine("\nRejected Applications (Historical):");
+                foreach (var a in rejected) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            }
+            else Console.WriteLine("\nNo rejected applications found.");
+            WaitForKey();
+            break;
+        case "4":
+            var toApprove = apps?.Where(a => a.Status == "Reviewed").ToList();
+            if (toApprove == null || !toApprove.Any()) { Console.WriteLine("\nNo applications to approve."); WaitForKey(); break; }
             Console.WriteLine("\nApplications to Approve:");
-            foreach (var a in appApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
+            foreach (var a in toApprove) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
             
             Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var appId)) break;
@@ -317,12 +361,12 @@ async Task ApproverMenuAsync()
             Console.WriteLine(success ? "\nApproval processed!" : "\nFailed to process approval.");
             WaitForKey();
             break;
-        case "3":
+        case "5":
             var bal = await apiClient.GetTreasuryBalanceAsync();
             Console.WriteLine(bal.HasValue ? $"\nTreasury Balance: {bal.Value:C}" : "\nFailed to fetch balance.");
             WaitForKey();
             break;
-        case "4": Logout(); break;
+        case "6": Logout(); break;
     }
 }
 
