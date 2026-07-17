@@ -9,14 +9,23 @@ string? currentRole = null;
 while (true)
 {
     Console.Clear();
-    Console.WriteLine("=== Loan Application Platform ===");
+    Console.ForegroundColor = ConsoleColor.Cyan;
+    Console.WriteLine("=====================================");
+    Console.WriteLine("     LOAN APPLICATION PLATFORM       ");
+    Console.WriteLine("=====================================");
+    Console.ResetColor();
+
     if (apiClient.JwtToken != null)
     {
+        Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine($"[ Status: Logged In | Role: {currentRole} ]");
+        Console.ResetColor();
     }
     else
     {
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine("[ Status: NOT Logged In ]");
+        Console.ResetColor();
     }
 
     if (apiClient.JwtToken == null)
@@ -417,8 +426,14 @@ async Task AdminMenuAsync()
             var username = Console.ReadLine() ?? "";
             Console.Write("New Password: ");
             var password = Console.ReadLine() ?? "";
-            Console.Write("Role (Applicant, Reviewer, Approver, Admin): ");
-            var role = Console.ReadLine() ?? "";
+            Console.WriteLine("\nSelect Role:");
+            Console.WriteLine("1. Applicant");
+            Console.WriteLine("2. Reviewer");
+            Console.WriteLine("3. Approver");
+            Console.WriteLine("4. Admin");
+            Console.Write("Choice: ");
+            var roleChoice = Console.ReadLine();
+            var role = roleChoice switch { "1" => "Applicant", "2" => "Reviewer", "3" => "Approver", "4" => "Admin", _ => "" };
             
             var (success, error) = await apiClient.AdminRegisterUserAsync(username, password, role);
             Console.WriteLine(success ? "\nAccount created successfully!" : $"\nAccount creation failed: {error}");
