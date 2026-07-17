@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoanApplicationPlatform.API.Controllers
 {
     [ApiController]
-    [Authorize(Roles = "Admin,Approver")]
     [Route("api/treasury")]
     public class TreasuryController : ControllerBase
     {
@@ -17,6 +16,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpGet("balance")]
+        [Authorize(Roles = "Admin,Approver")]
         public async Task<ActionResult> GetBalance()
         {
             var treasury = await _loanRepository.GetTreasuryAsync();
@@ -26,6 +26,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpPost("deposit")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DepositFunds([FromBody] LoanApplicationPlatform.API.Models.PaymentDto depositDto)
         {
             if (depositDto.Amount <= 0) return BadRequest("Deposit amount must be positive.");
