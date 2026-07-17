@@ -2,9 +2,12 @@ using LoanApplicationPlatform.API.DbContexts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace LoanApplicationPlatform.API.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/test")]
     public class TestController : ControllerBase
     {
