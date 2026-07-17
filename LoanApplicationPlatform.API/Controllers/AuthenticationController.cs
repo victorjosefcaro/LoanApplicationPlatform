@@ -22,6 +22,13 @@ namespace LoanApplicationPlatform.API.Controllers
             public string? Password { get; set; }
         }
 
+        public class AdminRegistrationRequestBody
+        {
+            public string? Username { get; set; }
+            public string? Password { get; set; }
+            public string? Role { get; set; }
+        }
+
         public class ApplicantRegistrationRequestBody
         {
             public string? Username { get; set; }
@@ -90,6 +97,34 @@ namespace LoanApplicationPlatform.API.Controllers
                 Username = requestBody.Username,
                 PasswordHash = requestBody.Password, // No hashing to keep it simple for the demo
                 Role = "Applicant"
+            };
+
+            _context.Users.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        [HttpPost("admin/register")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationRequestBody requestBody)
+        {
+            if (string.IsNullOrWhiteSpace(requestBody.Username) || string.IsNullOrWhiteSpace(requestBody.Password) || string.IsNullOrWhiteSpace(requestBody.Role))
+            {
+                return BadRequest("Username, Password, and Role are required.");
+            }
+
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == requestBody.Username);
+            if (existingUser != null)
+            {
+                return Conflict("Username already exists.");
+            }
+
+            var newUser = new User
+            {
+                Username = requestBody.Username,
+                PasswordHash = requestBody.Password,
+                Role = requestBody.Role
             };
 
             _context.Users.Add(newUser);

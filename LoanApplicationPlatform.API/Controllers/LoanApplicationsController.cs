@@ -126,6 +126,15 @@ namespace LoanApplicationPlatform.API.Controllers
                 return BadRequest("Can only submit applications in Draft or Returned status.");
             }
 
+            if (application.TermInMonths > 0)
+            {
+                decimal estimatedMonthlyPayment = application.Amount / application.TermInMonths;
+                if (estimatedMonthlyPayment > application.MonthlyIncome)
+                {
+                    return BadRequest($"Submission rejected: Your monthly income ({application.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.");
+                }
+            }
+
             application.Status = "Submitted";
             await _loanRepository.SaveChangesAsync();
             return NoContent();
