@@ -59,7 +59,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     foreach (var a in toReview) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
                     
                     Console.Write("\nEnter Application ID: ");
-                    if (!int.TryParse(Console.ReadLine(), out var appId)) break;
+                    if (!int.TryParse(Console.ReadLine(), out var appId)) { ConsoleHelper.PrintError("Invalid ID."); break; }
                     Console.WriteLine("\nSelect Status to Apply:");
                     Console.WriteLine("1. Returned");
                     Console.WriteLine("2. Reviewed");

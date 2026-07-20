@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-var apiClient = new LoanApiClient("https://localhost:7103");
+const string ApiBaseUrl = "https://localhost:7103";
+using var apiClient = new LoanApiClient(ApiBaseUrl);
 string? currentRole = null;
 
 void Logout()
@@ -37,6 +38,8 @@ while (true)
         Console.ResetColor();
     }
 
+    try
+    {
     if (apiClient.JwtToken == null)
     {
         Console.WriteLine("\n1. Login");
@@ -71,5 +74,14 @@ while (true)
             ConsoleHelper.PrintError("Unknown role. Logging out...");
             Logout();
         }
+    }
+    }
+    catch (HttpRequestException ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"\nConnection error: {ex.Message}");
+        Console.WriteLine("Make sure the API server is running.");
+        Console.ResetColor();
+        ConsoleHelper.WaitForKey();
     }
 }

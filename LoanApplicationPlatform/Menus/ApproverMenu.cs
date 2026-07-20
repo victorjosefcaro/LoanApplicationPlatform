@@ -60,14 +60,13 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     foreach (var a in toApprove) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
                     
                     Console.Write("\nEnter Application ID: ");
-                    if (!int.TryParse(Console.ReadLine(), out var appId)) break;
+                    if (!int.TryParse(Console.ReadLine(), out var appId)) { ConsoleHelper.PrintError("Invalid ID."); break; }
                     Console.WriteLine("\nSelect Status to Apply:");
-                    Console.WriteLine("1. Returned");
-                    Console.WriteLine("2. Approved");
-                    Console.WriteLine("3. Rejected");
+                    Console.WriteLine("1. Approved");
+                    Console.WriteLine("2. Rejected");
                     Console.Write("Choice: ");
                     var statChoice = Console.ReadLine();
-                    string status = statChoice switch { "1" => "Returned", "2" => "Approved", "3" => "Rejected", _ => "" };
+                    string status = statChoice switch { "1" => "Approved", "2" => "Rejected", _ => "" };
                     
                     Console.Write("Remarks: ");
                     var remarks = Console.ReadLine();

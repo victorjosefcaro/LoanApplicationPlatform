@@ -66,11 +66,11 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             Console.Write("Applicant Name: ");
             var name = Console.ReadLine();
             Console.Write("Amount: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var amt)) return;
+            if (!decimal.TryParse(Console.ReadLine(), out var amt)) { ConsoleHelper.PrintError("Invalid amount."); return; }
             Console.Write("Term (months): ");
-            if (!int.TryParse(Console.ReadLine(), out var term)) return;
+            if (!int.TryParse(Console.ReadLine(), out var term)) { ConsoleHelper.PrintError("Invalid term."); return; }
             Console.Write("Monthly Income: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var inc)) return;
+            if (!decimal.TryParse(Console.ReadLine(), out var inc)) { ConsoleHelper.PrintError("Invalid income."); return; }
             Console.Write("Purpose: ");
             var purpose = Console.ReadLine();
             
@@ -98,11 +98,11 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                 Console.Write("Updated Applicant Name: ");
                 var ename = Console.ReadLine();
                 Console.Write("Updated Amount: ");
-                if (!decimal.TryParse(Console.ReadLine(), out var eamt)) return;
+                if (!decimal.TryParse(Console.ReadLine(), out var eamt)) { ConsoleHelper.PrintError("Invalid amount."); return; }
                 Console.Write("Updated Term (months): ");
-                if (!int.TryParse(Console.ReadLine(), out var eterm)) return;
+                if (!int.TryParse(Console.ReadLine(), out var eterm)) { ConsoleHelper.PrintError("Invalid term."); return; }
                 Console.Write("Updated Monthly Income: ");
-                if (!decimal.TryParse(Console.ReadLine(), out var einc)) return;
+                if (!decimal.TryParse(Console.ReadLine(), out var einc)) { ConsoleHelper.PrintError("Invalid income."); return; }
                 Console.Write("Updated Purpose: ");
                 var epurpose = Console.ReadLine();
                 
@@ -150,7 +150,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             foreach (var a in allApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID: ");
-            if (!int.TryParse(Console.ReadLine(), out var loanId)) return;
+            if (!int.TryParse(Console.ReadLine(), out var loanId)) { ConsoleHelper.PrintError("Invalid ID."); return; }
             
             var sch = await apiClient.GetPaymentSchedulesAsync(loanId);
             if (sch == null || !sch.Any(s => s.Status != "Paid" && s.Status != "Payment Submitted")) { ConsoleHelper.PrintError("No pending schedules to pay."); return; }
@@ -158,7 +158,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             foreach (var s in sch.Where(s => s.Status != "Paid" && s.Status != "Payment Submitted")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
             
             Console.Write("\nEnter Schedule ID to notify payment sent: ");
-            if (!int.TryParse(Console.ReadLine(), out var schId)) return;
+            if (!int.TryParse(Console.ReadLine(), out var schId)) { ConsoleHelper.PrintError("Invalid Schedule ID."); return; }
             
             var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId);
             if (paySuccess) ConsoleHelper.PrintSuccess("Payment notified successfully! Waiting for Admin to post.");

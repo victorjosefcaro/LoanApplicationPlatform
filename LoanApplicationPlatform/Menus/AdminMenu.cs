@@ -140,7 +140,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                 Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Remarks: {a.Remarks}");
             
             Console.Write("\nEnter Application ID to release funds: ");
-            if (!int.TryParse(Console.ReadLine(), out var releaseId)) return;
+            if (!int.TryParse(Console.ReadLine(), out var releaseId)) { ConsoleHelper.PrintError("Invalid ID."); return; }
             
             var relSuccess = await apiClient.ReleaseFundsAsync(releaseId);
             if (relSuccess) ConsoleHelper.PrintSuccess("Funds successfully released! Payment schedules generated.");
@@ -156,7 +156,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             foreach (var a in allAppsForPay) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID to check schedules: ");
-            if (!int.TryParse(Console.ReadLine(), out var pLoanId)) return;
+            if (!int.TryParse(Console.ReadLine(), out var pLoanId)) { ConsoleHelper.PrintError("Invalid ID."); return; }
             
             var pSch = await apiClient.GetPaymentSchedulesAsync(pLoanId);
             var submittedSchs = pSch?.Where(s => s.Status == "Payment Submitted" || s.Status == "Partially Paid").ToList();
@@ -167,9 +167,9 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                 Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, AmountDue: {s.AmountDue:C}, AmountPaid: {s.AmountPaid:C}, Status: {s.Status}");
                 
             Console.Write("\nEnter Schedule ID to post: ");
-            if (!int.TryParse(Console.ReadLine(), out var pSchId)) return;
+            if (!int.TryParse(Console.ReadLine(), out var pSchId)) { ConsoleHelper.PrintError("Invalid Schedule ID."); return; }
             Console.Write("Enter Verified Payment Amount: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var verifiedAmt)) return;
+            if (!decimal.TryParse(Console.ReadLine(), out var verifiedAmt)) { ConsoleHelper.PrintError("Invalid amount."); return; }
             
             var postSuccess = await apiClient.PostPaymentAsync(pLoanId, pSchId, verifiedAmt);
             if (postSuccess) ConsoleHelper.PrintSuccess("Payment posted to treasury successfully!");
