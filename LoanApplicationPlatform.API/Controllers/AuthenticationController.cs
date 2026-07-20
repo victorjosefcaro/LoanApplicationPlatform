@@ -1,5 +1,6 @@
 using LoanApplicationPlatform.API.DbContexts;
 using LoanApplicationPlatform.API.Entities;
+using LoanApplicationPlatform.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,25 +17,6 @@ namespace LoanApplicationPlatform.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly LoanApplicationPlatformContext _context;
 
-        public class AuthenticationRequestBody
-        {
-            public string? Username { get; set; }
-            public string? Password { get; set; }
-        }
-
-        public class AdminRegistrationRequestBody
-        {
-            public string? Username { get; set; }
-            public string? Password { get; set; }
-            public string? Role { get; set; }
-        }
-
-        public class ApplicantRegistrationRequestBody
-        {
-            public string? Username { get; set; }
-            public string? Password { get; set; }
-        }
-
         public AuthenticationController(IConfiguration configuration, LoanApplicationPlatformContext context)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -42,11 +24,11 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpPost("authenticate")]
-        public async Task<ActionResult<string>> Authenticate(AuthenticationRequestBody authenticationRequestBody)
+        public async Task<ActionResult<string>> Authenticate(LoginRequestDto loginRequest)
         {
             var user = await ValidateUserCredentials(
-                authenticationRequestBody.Username,
-                authenticationRequestBody.Password);
+                loginRequest.Username,
+                loginRequest.Password);
 
             if (user == null)
             {
@@ -79,7 +61,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult> RegisterApplicant(ApplicantRegistrationRequestBody requestBody)
+        public async Task<ActionResult> RegisterApplicant(LoginRequestDto requestBody)
         {
             if (string.IsNullOrWhiteSpace(requestBody.Username) || string.IsNullOrWhiteSpace(requestBody.Password))
             {
@@ -107,7 +89,7 @@ namespace LoanApplicationPlatform.API.Controllers
 
         [HttpPost("admin/register")]
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-        public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationRequestBody requestBody)
+        public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
         {
             if (string.IsNullOrWhiteSpace(requestBody.Username) || string.IsNullOrWhiteSpace(requestBody.Password) || string.IsNullOrWhiteSpace(requestBody.Role))
             {
