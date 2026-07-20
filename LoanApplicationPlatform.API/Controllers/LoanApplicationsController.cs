@@ -177,7 +177,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 return BadRequest("Can only review submitted applications.");
             }
 
-            application.Status = reviewDto.Status;
+            application.Status = Enum.Parse<LoanStatus>(reviewDto.Status);
             application.Remarks = reviewDto.Remarks;
 
             await _loanRepository.SaveChangesAsync();
@@ -196,7 +196,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 return BadRequest("Can only process applications that have been reviewed.");
             }
 
-            application.Status = approveDto.Status;
+            application.Status = Enum.Parse<LoanStatus>(approveDto.Status);
             application.Remarks = approveDto.Remarks;
 
             await _loanRepository.SaveChangesAsync();

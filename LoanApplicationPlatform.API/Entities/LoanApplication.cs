@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LoanApplicationPlatform.API.Constants;
 
 namespace LoanApplicationPlatform.API.Entities
 {
@@ -27,8 +28,7 @@ namespace LoanApplicationPlatform.API.Entities
         [MaxLength(500)]
         public string Purpose { get; set; } = string.Empty;
 
-        [MaxLength(50)]
-        public string Status { get; set; } = "Submitted"; // Submitted, Returned, Reviewed, Approved, Rejected, Released, Cancelled, Completed
+        public LoanStatus Status { get; set; } = LoanStatus.Submitted;
         
         [MaxLength(500)]
         public string? Remarks { get; set; }

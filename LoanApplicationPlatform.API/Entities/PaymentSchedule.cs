@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LoanApplicationPlatform.API.Constants;
 
 namespace LoanApplicationPlatform.API.Entities
 {
@@ -18,8 +19,7 @@ namespace LoanApplicationPlatform.API.Entities
         public DateTime DueDate { get; set; }
         public decimal AmountDue { get; set; }
         public decimal AmountPaid { get; set; }
-        
-        [MaxLength(50)]
-        public string Status { get; set; } = "Pending"; // Pending, Payment Submitted, Partially Paid, Paid
+
+        public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
     }
 }

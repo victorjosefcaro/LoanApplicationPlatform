@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using LoanApplicationPlatform.API.Constants;
 using LoanApplicationPlatform.API.Entities;
 
 namespace LoanApplicationPlatform.API.DbContexts
@@ -19,6 +20,17 @@ namespace LoanApplicationPlatform.API.DbContexts
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Store enums as strings in the database for readability
+            modelBuilder.Entity<LoanApplication>()
+                .Property(l => l.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<PaymentSchedule>()
+                .Property(p => p.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50);
 
             // Seed initial data
             modelBuilder.Entity<Treasury>().HasData(

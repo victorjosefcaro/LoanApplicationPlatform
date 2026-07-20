@@ -22,9 +22,9 @@ namespace LoanApplicationPlatform.API.Services
                 collection = collection.Where(a => a.ApplicantId == applicantId.Value);
             }
 
-            if (!string.IsNullOrWhiteSpace(status))
+            if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<LoanApplicationPlatform.API.Constants.LoanStatus>(status.Trim(), out var parsedStatus))
             {
-                collection = collection.Where(a => a.Status == status.Trim());
+                collection = collection.Where(a => a.Status == parsedStatus);
             }
 
             return await collection.OrderByDescending(a => a.CreatedAt).ToListAsync();
