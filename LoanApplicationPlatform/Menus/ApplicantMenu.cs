@@ -22,7 +22,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             switch (choice)
             {
                 case "1":
-                    await ViewApplications(apiClient);
+                    await ViewMyApplications(apiClient);
                     break;
                 case "2":
                     await CreateApplication(apiClient);
@@ -31,7 +31,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     await EditReturnedApplication(apiClient);
                     break;
                 case "4":
-                    await ViewSchedules(apiClient);
+                    await ViewPaymentSchedules(apiClient);
                     break;
                 case "5":
                     await MakePayment(apiClient);
@@ -45,20 +45,14 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             }
         }
 
-        private static async Task ViewApplications(LoanApiClient apiClient)
+        private static async Task ViewMyApplications(LoanApiClient apiClient)
         {
-            var apps = await apiClient.GetApplicationsAsync();
-            if (apps != null && apps.Any())
-            {
-                var activeApps = apps.OrderByDescending(a => a.CreatedAt).ToList();
-                Console.WriteLine("\nYour Applications:");
-                foreach (var a in activeApps)
-                {
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Term: {a.TermInMonths} mos, Status: {a.Status}, Remarks: {a.Remarks}");
-                }
-                ConsoleHelper.WaitForKey();
-            }
-            else ConsoleHelper.PrintError("No applications found.");
+            await ConsolePaginator.PaginateAsync(
+                "My Applications",
+                new[] { "ID", "Amount", "Term", "Status", "Remarks" },
+                (ApplicationDto a) => new[] { a.Id.ToString(), a.Amount.ToString("C"), $"{a.TermInMonths} mos", a.Status, a.Remarks ?? "" },
+                (page, size) => apiClient.GetApplicationsAsync(page, size)
+            );
         }
 
         private static async Task CreateApplication(LoanApiClient apiClient)
@@ -81,8 +75,8 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
 
         private static async Task EditReturnedApplication(LoanApiClient apiClient)
         {
-            var retApps = await apiClient.GetApplicationsAsync();
-            var returned = retApps?.Where(a => a.Status == "Returned").ToList();
+            var retApps = await apiClient.GetApplicationsAsync(1, 1000);
+            var returned = retApps?.Items?.Where(a => a.Status == "Returned").ToList();
             if (returned == null || !returned.Any()) {
                 ConsoleHelper.PrintError("You have no returned applications to edit.");
                 return;
@@ -117,12 +111,39 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             }
         }
 
-        private static async Task ViewSchedules(LoanApiClient apiClient)
+        private static async Task ViewPendingActionItems(LoanApiClient apiClient)
         {
-            var appList = await apiClient.GetApplicationsAsync();
-            if (appList == null || !appList.Any()) { ConsoleHelper.PrintError("You have no applications."); return; }
+            var apps = await apiClient.GetApplicationsAsync(1, 1000);
+            var pendingInfo = apps?.Items?.Where(a => a.Status == "PendingInfo").ToList();
+            if (pendingInfo == null || !pendingInfo.Any())
+            {
+                ConsoleHelper.PrintSuccess("No pending action items!");
+                return;
+            }
+            
+            Console.WriteLine("\nApplications Requiring Action:");
+            foreach (var a in pendingInfo)
+                Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            
+            Console.Write("\nEnter Application ID: ");
+            if (int.TryParse(Console.ReadLine(), out var pid))
+            {
+                // Action implementation logic here...
+            }
+        }
+
+        private static async Task ViewPaymentSchedules(LoanApiClient apiClient)
+        {
+            var apps = await apiClient.GetApplicationsAsync(1, 1000);
+            if (apps == null || apps.Items == null || !apps.Items.Any())
+            {
+                ConsoleHelper.PrintError("You have no applications.");
+                return;
+            }
+            
             Console.WriteLine("\nYour Applications:");
-            foreach (var a in appList) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            foreach (var a in apps.Items)
+                Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID: ");
             if (int.TryParse(Console.ReadLine(), out var pid))
@@ -144,10 +165,10 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
 
         private static async Task MakePayment(LoanApiClient apiClient)
         {
-            var allApps = await apiClient.GetApplicationsAsync();
-            if (allApps == null || !allApps.Any()) { ConsoleHelper.PrintError("You have no applications."); return; }
+            var allApps = await apiClient.GetApplicationsAsync(1, 1000);
+            if (allApps == null || allApps.Items == null || !allApps.Items.Any()) { ConsoleHelper.PrintError("You have no applications."); return; }
             Console.WriteLine("\nYour Applications:");
-            foreach (var a in allApps) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            foreach (var a in allApps.Items) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID: ");
             if (!int.TryParse(Console.ReadLine(), out var loanId)) { ConsoleHelper.PrintError("Invalid ID."); return; }

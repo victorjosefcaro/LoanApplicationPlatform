@@ -55,15 +55,12 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
 
         private static async Task ViewApplications(LoanApiClient apiClient)
         {
-            var apps = await apiClient.GetApplicationsAsync();
-            if (apps != null && apps.Any())
-            {
-                Console.WriteLine("\nAll Applications:");
-                foreach (var a in apps)
-                    Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");
-                ConsoleHelper.WaitForKey();
-            }
-            else ConsoleHelper.PrintError("No applications found.");
+            await ConsolePaginator.PaginateAsync(
+                "All Applications",
+                new[] { "ID", "Amount", "Status", "Remarks" },
+                (ApplicationDto a) => new[] { a.Id.ToString(), a.Amount.ToString("C"), a.Status, a.Remarks ?? "" },
+                (page, size) => apiClient.GetApplicationsAsync(page, size)
+            );
         }
 
         private static async Task ViewTreasury(LoanApiClient apiClient)
@@ -88,22 +85,12 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
 
         private static async Task ViewLedger(LoanApiClient apiClient)
         {
-            var transactions = await apiClient.GetTreasuryTransactionsAsync();
-            if (transactions != null && transactions.Any())
-            {
-                Console.WriteLine("\n--- Treasury Transaction Ledger ---");
-                Console.WriteLine($"{"ID",-5} | {"Date (UTC)",-20} | {"Amount",-15} | {"Type",-18} | {"Ref ID",-6}");
-                Console.WriteLine(new string('-', 75));
-                foreach (var t in transactions)
-                {
-                    Console.WriteLine($"{t.Id,-5} | {t.TransactionDate:yyyy-MM-dd HH:mm:ss} | {t.Amount,15:C} | {t.Type,-18} | {t.ReferenceId?.ToString() ?? "N/A",-6}");
-                }
-                ConsoleHelper.WaitForKey();
-            }
-            else
-            {
-                ConsoleHelper.PrintError("No transactions found in the ledger.");
-            }
+            await ConsolePaginator.PaginateAsync(
+                "Treasury Transaction Ledger",
+                new[] { "ID", "Date (UTC)", "Amount", "Type", "Ref ID" },
+                (TreasuryTransactionDto t) => new[] { t.Id.ToString(), t.TransactionDate.ToString("yyyy-MM-dd HH:mm:ss"), t.Amount.ToString("C"), t.Type, t.ReferenceId?.ToString() ?? "N/A" },
+                (page, size) => apiClient.GetTreasuryTransactionsAsync(page, size)
+            );
         }
 
         private static async Task CreateUser(LoanApiClient apiClient)
@@ -128,8 +115,9 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
 
         private static async Task ReleaseFunds(LoanApiClient apiClient)
         {
-            var appList = await apiClient.GetApplicationsAsync();
-            var approvedList = appList?.Where(a => a.Status == "Approved").ToList();
+            // For picking, we can fetch a large page just to display quickly, or let user input ID.
+            var appList = await apiClient.GetApplicationsAsync(1, 1000);
+            var approvedList = appList?.Items?.Where(a => a.Status == "Approved").ToList();
             if (approvedList == null || !approvedList.Any())
             {
                 ConsoleHelper.PrintError("No approved applications waiting for fund release.");
@@ -149,11 +137,11 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
 
         private static async Task PostPayments(LoanApiClient apiClient)
         {
-            var allAppsForPay = await apiClient.GetApplicationsAsync();
-            if (allAppsForPay == null || !allAppsForPay.Any()) { ConsoleHelper.PrintError("No applications."); return; }
+            var allAppsForPay = await apiClient.GetApplicationsAsync(1, 1000);
+            if (allAppsForPay == null || allAppsForPay.Items == null || !allAppsForPay.Items.Any()) { ConsoleHelper.PrintError("No applications."); return; }
             
-            Console.WriteLine("\nAll Applications:");
-            foreach (var a in allAppsForPay) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+            Console.WriteLine("\nAll Applications (First 1000):");
+            foreach (var a in allAppsForPay.Items) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
             
             Console.Write("\nEnter Application ID to check schedules: ");
             if (!int.TryParse(Console.ReadLine(), out var pLoanId)) { ConsoleHelper.PrintError("Invalid ID."); return; }

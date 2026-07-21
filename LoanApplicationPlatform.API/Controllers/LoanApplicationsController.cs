@@ -1,6 +1,7 @@
 using AutoMapper;
 using LoanApplicationPlatform.API.Constants;
 using LoanApplicationPlatform.API.Entities;
+using LoanApplicationPlatform.API.Helpers;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -24,7 +25,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LoanApplicationDto>>> GetApplications()
+        public async Task<ActionResult<IEnumerable<LoanApplicationDto>>> GetApplications([FromQuery] ResourceParameters parameters)
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -32,18 +33,28 @@ namespace LoanApplicationPlatform.API.Controllers
             if (userIdStr == null || role == null) return Unauthorized();
             int userId = int.Parse(userIdStr);
 
-            IEnumerable<LoanApplication> applications;
+            PagedList<LoanApplication> applications;
 
             if (role == "Applicant")
             {
-                applications = await _loanRepository.GetLoanApplicationsAsync(applicantId: userId);
+                applications = await _loanRepository.GetLoanApplicationsAsync(parameters, applicantId: userId);
             }
             else 
             {
-                // Reviewers, Approvers, and Admins can fetch all historical applications
-                // Filtering into specific buckets (Approved, Rejected, Pending) is handled by the client
-                applications = await _loanRepository.GetLoanApplicationsAsync();
+                applications = await _loanRepository.GetLoanApplicationsAsync(parameters);
             }
+
+            var paginationMetadata = new
+            {
+                totalCount = applications.TotalCount,
+                pageSize = applications.PageSize,
+                currentPage = applications.CurrentPage,
+                totalPages = applications.TotalPages,
+                hasPrevious = applications.HasPrevious,
+                hasNext = applications.HasNext
+            };
+
+            Response.Headers.Append("X-Pagination", System.Text.Json.JsonSerializer.Serialize(paginationMetadata));
 
             return Ok(_mapper.Map<IEnumerable<LoanApplicationDto>>(applications));
         }

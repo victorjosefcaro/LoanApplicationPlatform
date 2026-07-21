@@ -1,4 +1,5 @@
 using LoanApplicationPlatform.API.Entities;
+using LoanApplicationPlatform.API.Helpers;
 using LoanApplicationPlatform.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,10 +52,23 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpGet("transactions")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> GetTransactions()
+        [Authorize(Roles = "Admin,Approver")]
+        public async Task<ActionResult> GetTransactions([FromQuery] ResourceParameters parameters)
         {
-            var transactions = await _loanRepository.GetTreasuryTransactionsAsync();
+            var transactions = await _loanRepository.GetTreasuryTransactionsAsync(parameters);
+
+            var paginationMetadata = new
+            {
+                totalCount = transactions.TotalCount,
+                pageSize = transactions.PageSize,
+                currentPage = transactions.CurrentPage,
+                totalPages = transactions.TotalPages,
+                hasPrevious = transactions.HasPrevious,
+                hasNext = transactions.HasNext
+            };
+
+            Response.Headers.Append("X-Pagination", System.Text.Json.JsonSerializer.Serialize(paginationMetadata));
+
             return Ok(transactions);
         }
     }

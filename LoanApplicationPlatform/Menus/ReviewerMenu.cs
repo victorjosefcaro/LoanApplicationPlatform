@@ -18,12 +18,12 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             Console.Write("\nSelect an option: ");
             
             var choice = Console.ReadLine();
-            var apps = await apiClient.GetApplicationsAsync();
+            var apps = await apiClient.GetApplicationsAsync(1, 1000);
             
             switch (choice)
             {
                 case "1":
-                    var pending = apps?.Where(a => a.Status == "Submitted").ToList();
+                    var pending = apps?.Items?.Where(a => a.Status == "Submitted").ToList();
                     if (pending != null && pending.Any())
                     {
                         Console.WriteLine("\nApplications Pending Review:");
@@ -33,7 +33,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     else ConsoleHelper.PrintError("No applications found.");
                     break;
                 case "2":
-                    var approved = apps?.Where(a => a.Status == "Approved").ToList();
+                    var approved = apps?.Items?.Where(a => a.Status == "Approved").ToList();
                     if (approved != null && approved.Any())
                     {
                         Console.WriteLine("\nApproved Applications (Historical):");
@@ -43,7 +43,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     else ConsoleHelper.PrintError("No approved applications found.");
                     break;
                 case "3":
-                    var rejected = apps?.Where(a => a.Status == "Rejected").ToList();
+                    var rejected = apps?.Items?.Where(a => a.Status == "Rejected").ToList();
                     if (rejected != null && rejected.Any())
                     {
                         Console.WriteLine("\nRejected Applications (Historical):");
@@ -53,7 +53,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     else ConsoleHelper.PrintError("No rejected applications found.");
                     break;
                 case "4":
-                    var toReview = apps?.Where(a => a.Status == "Submitted").ToList();
+                    var toReview = apps?.Items?.Where(a => a.Status == "Submitted").ToList();
                     if (toReview == null || !toReview.Any()) { ConsoleHelper.PrintError("No applications to review."); break; }
                     Console.WriteLine("\nApplications to Review:");
                     foreach (var a in toReview) Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}, Remarks: {a.Remarks}");

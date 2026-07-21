@@ -55,14 +55,31 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return (false, await response.Content.ReadAsStringAsync());
         }
 
-        public async Task<IEnumerable<LoanApplicationDto>?> GetApplicationsAsync()
+        public async Task<PagedResponse<ApplicationDto>?> GetApplicationsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var response = await _httpClient.GetAsync("/api/loanapplications");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                return await response.Content.ReadFromJsonAsync<IEnumerable<LoanApplicationDto>>(_jsonOptions);
+                var response = await _httpClient.GetAsync($"api/loanapplications?pageNumber={pageNumber}&pageSize={pageSize}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<IEnumerable<ApplicationDto>>();
+                    PaginationMetadata? metadata = null;
+                    if (response.Headers.TryGetValues("X-Pagination", out var values))
+                    {
+                        var json = values.FirstOrDefault();
+                        if (json != null)
+                        {
+                            metadata = System.Text.Json.JsonSerializer.Deserialize<PaginationMetadata>(json);
+                        }
+                    }
+                    return new PagedResponse<ApplicationDto>(data ?? new List<ApplicationDto>(), metadata);
+                }
+                return null;
             }
-            return null;
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<bool> CreateApplicationAsync(object applicationData)
@@ -140,14 +157,24 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<IEnumerable<TreasuryTransactionDto>?> GetTreasuryTransactionsAsync()
+        public async Task<PagedResponse<TreasuryTransactionDto>?> GetTreasuryTransactionsAsync(int pageNumber = 1, int pageSize = 10)
         {
             try
             {
-                var response = await _httpClient.GetAsync("api/treasury/transactions");
+                var response = await _httpClient.GetAsync($"api/treasury/transactions?pageNumber={pageNumber}&pageSize={pageSize}");
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<IEnumerable<TreasuryTransactionDto>>();
+                    var data = await response.Content.ReadFromJsonAsync<IEnumerable<TreasuryTransactionDto>>();
+                    PaginationMetadata? metadata = null;
+                    if (response.Headers.TryGetValues("X-Pagination", out var values))
+                    {
+                        var json = values.FirstOrDefault();
+                        if (json != null)
+                        {
+                            metadata = System.Text.Json.JsonSerializer.Deserialize<PaginationMetadata>(json);
+                        }
+                    }
+                    return new PagedResponse<TreasuryTransactionDto>(data ?? new List<TreasuryTransactionDto>(), metadata);
                 }
                 return null;
             }
@@ -166,4 +193,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
     public record TreasuryTransactionDto(int Id, DateTime TransactionDate, decimal Amount, string Type, int? ReferenceId);
     public record ApplicationDto(int Id, decimal Amount, int TermInMonths, string Status, string Remarks, DateTime CreatedAt);
     public record PaymentScheduleDto(int Id, DateTime DueDate, decimal AmountDue, decimal AmountPaid, string Status);
+    
+    public record PaginationMetadata(int totalCount, int pageSize, int currentPage, int totalPages, bool hasPrevious, bool hasNext);
+    public record PagedResponse<T>(IEnumerable<T> Items, PaginationMetadata? Metadata);
 }

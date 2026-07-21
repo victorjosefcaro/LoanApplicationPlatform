@@ -1,5 +1,6 @@
 using LoanApplicationPlatform.API.DbContexts;
 using LoanApplicationPlatform.API.Entities;
+using LoanApplicationPlatform.API.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LoanApplicationPlatform.API.Services
@@ -13,7 +14,7 @@ namespace LoanApplicationPlatform.API.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IEnumerable<LoanApplication>> GetLoanApplicationsAsync(int? applicantId = null, string? status = null)
+        public async Task<PagedList<LoanApplication>> GetLoanApplicationsAsync(ResourceParameters parameters, int? applicantId = null, string? status = null)
         {
             var collection = _context.LoanApplications as IQueryable<LoanApplication>;
 
@@ -27,7 +28,8 @@ namespace LoanApplicationPlatform.API.Services
                 collection = collection.Where(a => a.Status == parsedStatus);
             }
 
-            return await collection.OrderByDescending(a => a.CreatedAt).ToListAsync();
+            var orderedCollection = collection.OrderByDescending(a => a.CreatedAt);
+            return await PagedList<LoanApplication>.CreateAsync(orderedCollection, parameters.PageNumber, parameters.PageSize);
         }
 
         public async Task<LoanApplication?> GetLoanApplicationAsync(int loanApplicationId)
@@ -64,11 +66,10 @@ namespace LoanApplicationPlatform.API.Services
             _context.TreasuryTransactions.Add(transaction);
         }
 
-        public async Task<IEnumerable<TreasuryTransaction>> GetTreasuryTransactionsAsync()
+        public async Task<PagedList<TreasuryTransaction>> GetTreasuryTransactionsAsync(ResourceParameters parameters)
         {
-            return await _context.TreasuryTransactions
-                .OrderByDescending(t => t.TransactionDate)
-                .ToListAsync();
+            var collection = _context.TreasuryTransactions.OrderByDescending(t => t.TransactionDate);
+            return await PagedList<TreasuryTransaction>.CreateAsync(collection, parameters.PageNumber, parameters.PageSize);
         }
 
         public async Task<bool> SaveChangesAsync()
