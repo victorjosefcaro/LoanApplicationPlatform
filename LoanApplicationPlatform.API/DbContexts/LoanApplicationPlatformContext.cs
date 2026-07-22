@@ -55,17 +55,19 @@ namespace LoanApplicationPlatform.API.DbContexts
             modelBuilder.Entity<TreasuryTransaction>()
                 .HasQueryFilter(t => t.TenantId == _tenantService.GetCurrentTenantId());
 
-            // Seed Default Tenant
+            // Seed Tenants
             modelBuilder.Entity<Tenant>().HasData(
-                new Tenant { Id = 1, Name = "Default Lending Co" }
+                new Tenant { Id = 1, Name = "Default Lending Co" },
+                new Tenant { Id = 2, Name = "Acme Finance" }
             );
 
-            // Seed initial Treasury for Default Tenant
+            // Seed initial Treasuries
             modelBuilder.Entity<Treasury>().HasData(
-                new Treasury { Id = 1, Balance = 1000000m, TenantId = 1 }
+                new Treasury { Id = 1, Balance = 1000000m, TenantId = 1 },
+                new Treasury { Id = 2, Balance = 500000m, TenantId = 2 }
             );
 
-            // Seed Admin User for Default Tenant
+            // Seed Users for Tenants
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
@@ -74,6 +76,22 @@ namespace LoanApplicationPlatform.API.DbContexts
                     PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
                     Role = "Admin",
                     TenantId = 1
+                },
+                new User
+                {
+                    Id = 2,
+                    Username = "acme_admin",
+                    PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
+                    Role = "Admin",
+                    TenantId = 2
+                },
+                new User
+                {
+                    Id = 3,
+                    Username = "acme_applicant",
+                    PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
+                    Role = "Applicant",
+                    TenantId = 2
                 }
             );
         }

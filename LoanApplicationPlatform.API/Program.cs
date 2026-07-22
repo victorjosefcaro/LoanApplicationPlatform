@@ -68,6 +68,13 @@ builder.Services.AddAutoMapper(cfg => cfg.AddProfile<LoanApplicationPlatform.API
 
 var app = builder.Build();
 
+// Automatically apply EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<LoanApplicationPlatform.API.DbContexts.LoanApplicationPlatformContext>();
+    dbContext.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
