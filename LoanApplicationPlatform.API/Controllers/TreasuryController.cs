@@ -1,6 +1,7 @@
 using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Helpers;
-using LoanApplicationPlatform.API.Services;
+using LoanApplicationPlatform.API.Models;
+using LoanApplicationPlatform.API.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,35 +11,35 @@ namespace LoanApplicationPlatform.API.Controllers
     [Route("api/treasury")]
     public class TreasuryController : ControllerBase
     {
-        private readonly ILoanRepository _loanRepository;
+        private readonly ITreasuryRepository _treasuryRepository;
 
-        public TreasuryController(ILoanRepository loanRepository)
+        public TreasuryController(ITreasuryRepository treasuryRepository)
         {
-            _loanRepository = loanRepository ?? throw new ArgumentNullException(nameof(loanRepository));
+            _treasuryRepository = treasuryRepository ?? throw new ArgumentNullException(nameof(treasuryRepository));
         }
 
         [HttpGet("balance")]
         [Authorize(Roles = "Admin,Approver")]
         public async Task<ActionResult> GetBalance()
         {
-            var treasury = await _loanRepository.GetTreasuryAsync();
+            var treasury = await _treasuryRepository.GetTreasuryAsync();
             if (treasury == null) return NotFound("Treasury record not found.");
-            
+
             return Ok(new { balance = treasury.Balance });
         }
 
         [HttpPost("deposit")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> DepositFunds([FromBody] LoanApplicationPlatform.API.Models.DepositDto depositDto)
+        public async Task<ActionResult> DepositFunds([FromBody] DepositDto depositDto)
         {
             if (depositDto.Amount <= 0) return BadRequest("Deposit amount must be positive.");
 
-            var treasury = await _loanRepository.GetTreasuryAsync();
+            var treasury = await _treasuryRepository.GetTreasuryAsync();
             if (treasury == null) return NotFound("Treasury record not found.");
-            
+
             treasury.Balance += depositDto.Amount;
-            
-            _loanRepository.AddTreasuryTransaction(new TreasuryTransaction
+
+            _treasuryRepository.AddTreasuryTransaction(new TreasuryTransaction
             {
                 Amount = depositDto.Amount,
                 TransactionDate = DateTime.UtcNow,
@@ -46,7 +47,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 ReferenceId = null
             });
 
-            await _loanRepository.SaveChangesAsync();
+            await _treasuryRepository.SaveChangesAsync();
 
             return Ok(new { balance = treasury.Balance });
         }
@@ -55,7 +56,7 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Admin,Approver")]
         public async Task<ActionResult> GetTransactions([FromQuery] ResourceParameters parameters)
         {
-            var transactions = await _loanRepository.GetTreasuryTransactionsAsync(parameters);
+            var transactions = await _treasuryRepository.GetTreasuryTransactionsAsync(parameters);
 
             var paginationMetadata = new
             {

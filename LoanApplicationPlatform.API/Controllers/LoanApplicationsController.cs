@@ -1,6 +1,3 @@
-using AutoMapper;
-using LoanApplicationPlatform.API.Constants;
-using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Helpers;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Services;
@@ -15,13 +12,11 @@ namespace LoanApplicationPlatform.API.Controllers
     [Route("api/loanapplications")]
     public class LoanApplicationsController : ControllerBase
     {
-        private readonly ILoanRepository _loanRepository;
-        private readonly IMapper _mapper;
+        private readonly ILoanApplicationService _loanApplicationService;
 
-        public LoanApplicationsController(ILoanRepository loanRepository, IMapper mapper)
+        public LoanApplicationsController(ILoanApplicationService loanApplicationService)
         {
-            _loanRepository = loanRepository ?? throw new ArgumentNullException(nameof(loanRepository));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _loanApplicationService = loanApplicationService ?? throw new ArgumentNullException(nameof(loanApplicationService));
         }
 
         [HttpGet]
@@ -33,48 +28,35 @@ namespace LoanApplicationPlatform.API.Controllers
             if (userIdStr == null || role == null) return Unauthorized();
             int userId = int.Parse(userIdStr);
 
-            PagedList<LoanApplication> applications;
-
-            if (role == "Applicant")
-            {
-                applications = await _loanRepository.GetLoanApplicationsAsync(parameters, applicantId: userId);
-            }
-            else 
-            {
-                applications = await _loanRepository.GetLoanApplicationsAsync(parameters);
-            }
+            var pagedApplications = await _loanApplicationService.GetApplicationsAsync(userId, role, parameters);
 
             var paginationMetadata = new
             {
-                totalCount = applications.TotalCount,
-                pageSize = applications.PageSize,
-                currentPage = applications.CurrentPage,
-                totalPages = applications.TotalPages,
-                hasPrevious = applications.HasPrevious,
-                hasNext = applications.HasNext
+                totalCount = pagedApplications.TotalCount,
+                pageSize = pagedApplications.PageSize,
+                currentPage = pagedApplications.CurrentPage,
+                totalPages = pagedApplications.TotalPages,
+                hasPrevious = pagedApplications.HasPrevious,
+                hasNext = pagedApplications.HasNext
             };
 
             Response.Headers.Append("X-Pagination", System.Text.Json.JsonSerializer.Serialize(paginationMetadata));
 
-            return Ok(_mapper.Map<IEnumerable<LoanApplicationDto>>(applications));
+            return Ok(pagedApplications);
         }
 
         [HttpGet("{id}", Name = "GetApplication")]
         public async Task<ActionResult<LoanApplicationDto>> GetApplication(int id)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
-
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (userIdStr == null) return Unauthorized();
+            if (userIdStr == null || role == null) return Unauthorized();
 
-            if (role == "Applicant" && application.ApplicantId != int.Parse(userIdStr))
-            {
-                return Forbid();
-            }
+            var (dto, errorMessage, notFound, forbid) = await _loanApplicationService.GetApplicationAsync(id, int.Parse(userIdStr), role);
+            if (notFound) return NotFound();
+            if (forbid) return Forbid();
 
-            return Ok(_mapper.Map<LoanApplicationDto>(application));
+            return Ok(dto);
         }
 
         [HttpPost]
@@ -84,46 +66,27 @@ namespace LoanApplicationPlatform.API.Controllers
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdStr == null) return Unauthorized();
 
-            if (applicationDto.TermInMonths > 0)
+            var (createdDto, errorMessage) = await _loanApplicationService.CreateApplicationAsync(int.Parse(userIdStr), applicationDto);
+            if (errorMessage != null)
             {
-                decimal estimatedMonthlyPayment = applicationDto.Amount / applicationDto.TermInMonths;
-                if (estimatedMonthlyPayment > applicationDto.MonthlyIncome)
-                {
-                    return BadRequest($"Submission rejected: Your monthly income ({applicationDto.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.");
-                }
+                return BadRequest(errorMessage);
             }
 
-            var application = _mapper.Map<LoanApplication>(applicationDto);
-            application.ApplicantId = int.Parse(userIdStr);
-            application.Status = LoanStatus.Submitted;
-            application.InterestRate = 0.05m; // Flat 5% interest rate
-            application.CreatedAt = DateTime.UtcNow;
-
-            _loanRepository.AddLoanApplication(application);
-            await _loanRepository.SaveChangesAsync();
-
-            var createdDto = _mapper.Map<LoanApplicationDto>(application);
-            return CreatedAtRoute("GetApplication", new { id = application.Id }, createdDto);
+            return CreatedAtRoute("GetApplication", new { id = createdDto!.Id }, createdDto);
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Applicant")]
         public async Task<ActionResult> UpdateApplication(int id, [FromBody] LoanApplicationForUpdateDto applicationDto)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
-
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdStr == null || application.ApplicantId != int.Parse(userIdStr)) return Forbid();
+            if (userIdStr == null) return Unauthorized();
 
-            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned)
-            {
-                return BadRequest("Can only edit applications in Draft or Returned status.");
-            }
+            var (success, errorMessage, notFound, forbid) = await _loanApplicationService.UpdateApplicationAsync(id, int.Parse(userIdStr), applicationDto);
+            if (notFound) return NotFound();
+            if (forbid) return Forbid();
+            if (!success) return BadRequest(errorMessage);
 
-            _mapper.Map(applicationDto, application);
-            
-            await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
 
@@ -131,28 +94,14 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Applicant")]
         public async Task<ActionResult> SubmitApplication(int id)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
-
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdStr == null || application.ApplicantId != int.Parse(userIdStr)) return Forbid();
+            if (userIdStr == null) return Unauthorized();
 
-            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned)
-            {
-                return BadRequest("Can only submit applications in Draft or Returned status.");
-            }
+            var (success, errorMessage, notFound, forbid) = await _loanApplicationService.SubmitApplicationAsync(id, int.Parse(userIdStr));
+            if (notFound) return NotFound();
+            if (forbid) return Forbid();
+            if (!success) return BadRequest(errorMessage);
 
-            if (application.TermInMonths > 0)
-            {
-                decimal estimatedMonthlyPayment = application.Amount / application.TermInMonths;
-                if (estimatedMonthlyPayment > application.MonthlyIncome)
-                {
-                    return BadRequest($"Submission rejected: Your monthly income ({application.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.");
-                }
-            }
-
-            application.Status = LoanStatus.Submitted;
-            await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
 
@@ -160,19 +109,14 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Applicant")]
         public async Task<ActionResult> CancelApplication(int id)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
-
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdStr == null || application.ApplicantId != int.Parse(userIdStr)) return Forbid();
+            if (userIdStr == null) return Unauthorized();
 
-            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned && application.Status != LoanStatus.Submitted)
-            {
-                return BadRequest("Application cannot be cancelled at this stage.");
-            }
+            var (success, errorMessage, notFound, forbid) = await _loanApplicationService.CancelApplicationAsync(id, int.Parse(userIdStr));
+            if (notFound) return NotFound();
+            if (forbid) return Forbid();
+            if (!success) return BadRequest(errorMessage);
 
-            application.Status = LoanStatus.Cancelled;
-            await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
 
@@ -180,18 +124,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Reviewer")]
         public async Task<ActionResult> ReviewApplication(int id, [FromBody] ReviewDto reviewDto)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
+            var (success, errorMessage, notFound) = await _loanApplicationService.ReviewApplicationAsync(id, reviewDto);
+            if (notFound) return NotFound();
+            if (!success) return BadRequest(errorMessage);
 
-            if (application.Status != LoanStatus.Submitted)
-            {
-                return BadRequest("Can only review submitted applications.");
-            }
-
-            application.Status = Enum.Parse<LoanStatus>(reviewDto.Status);
-            application.Remarks = reviewDto.Remarks;
-
-            await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
 
@@ -199,18 +135,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Approver")]
         public async Task<ActionResult> ApproveApplication(int id, [FromBody] ApproveDto approveDto)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
+            var (success, errorMessage, notFound) = await _loanApplicationService.ApproveApplicationAsync(id, approveDto);
+            if (notFound) return NotFound();
+            if (!success) return BadRequest(errorMessage);
 
-            if (application.Status != LoanStatus.Reviewed)
-            {
-                return BadRequest("Can only process applications that have been reviewed.");
-            }
-
-            application.Status = Enum.Parse<LoanStatus>(approveDto.Status);
-            application.Remarks = approveDto.Remarks;
-
-            await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
 
@@ -218,46 +146,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> ReleaseFunds(int id)
         {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return NotFound();
+            var (success, errorMessage, notFound) = await _loanApplicationService.ReleaseFundsAsync(id);
+            if (notFound) return NotFound();
+            if (!success) return BadRequest(errorMessage);
 
-            if (application.Status != LoanStatus.Approved)
-            {
-                return BadRequest("Can only release funds for approved applications.");
-            }
-
-            var treasury = await _loanRepository.GetTreasuryAsync();
-            if (treasury == null || treasury.Balance < application.Amount)
-            {
-                return BadRequest("Insufficient treasury funds to release this loan.");
-            }
-
-            treasury.Balance -= application.Amount;
-            
-            _loanRepository.AddTreasuryTransaction(new TreasuryTransaction
-            {
-                Amount = -application.Amount,
-                TransactionDate = DateTime.UtcNow,
-                Type = "FundRelease",
-                ReferenceId = application.Id
-            });
-
-            decimal totalAmountOwed = application.Amount + (application.Amount * application.InterestRate);
-            decimal monthlyAmount = totalAmountOwed / application.TermInMonths;
-            for (int i = 1; i <= application.TermInMonths; i++)
-            {
-                _loanRepository.AddPaymentSchedule(new PaymentSchedule
-                {
-                    LoanApplicationId = application.Id,
-                    DueDate = DateTime.UtcNow.AddMonths(i),
-                    AmountDue = monthlyAmount,
-                    AmountPaid = 0,
-                    Status = PaymentStatus.Pending
-                });
-            }
-
-            application.Status = LoanStatus.Released;
-            await _loanRepository.SaveChangesAsync();
             return NoContent();
         }
     }

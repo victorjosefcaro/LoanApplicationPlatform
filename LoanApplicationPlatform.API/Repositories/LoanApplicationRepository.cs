@@ -3,13 +3,13 @@ using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Helpers;
 using Microsoft.EntityFrameworkCore;
 
-namespace LoanApplicationPlatform.API.Services
+namespace LoanApplicationPlatform.API.Repositories
 {
-    public class LoanRepository : ILoanRepository
+    public class LoanApplicationRepository : ILoanApplicationRepository
     {
         private readonly LoanApplicationPlatformContext _context;
 
-        public LoanRepository(LoanApplicationPlatformContext context)
+        public LoanApplicationRepository(LoanApplicationPlatformContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
@@ -23,7 +23,7 @@ namespace LoanApplicationPlatform.API.Services
                 collection = collection.Where(a => a.ApplicantId == applicantId.Value);
             }
 
-            if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<LoanApplicationPlatform.API.Constants.LoanStatus>(status.Trim(), out var parsedStatus))
+            if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<Constants.LoanStatus>(status.Trim(), out var parsedStatus))
             {
                 collection = collection.Where(a => a.Status == parsedStatus);
             }
@@ -54,22 +54,6 @@ namespace LoanApplicationPlatform.API.Services
         public void AddPaymentSchedule(PaymentSchedule paymentSchedule)
         {
             _context.PaymentSchedules.Add(paymentSchedule);
-        }
-
-        public async Task<Treasury?> GetTreasuryAsync()
-        {
-            return await _context.Treasury.FirstOrDefaultAsync();
-        }
-
-        public void AddTreasuryTransaction(TreasuryTransaction transaction)
-        {
-            _context.TreasuryTransactions.Add(transaction);
-        }
-
-        public async Task<PagedList<TreasuryTransaction>> GetTreasuryTransactionsAsync(ResourceParameters parameters)
-        {
-            var collection = _context.TreasuryTransactions.OrderByDescending(t => t.TransactionDate);
-            return await PagedList<TreasuryTransaction>.CreateAsync(collection, parameters.PageNumber, parameters.PageSize);
         }
 
         public async Task<bool> SaveChangesAsync()

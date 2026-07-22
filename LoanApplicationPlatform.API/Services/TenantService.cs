@@ -19,7 +19,6 @@ namespace LoanApplicationPlatform.API.Services
                 return tenantId;
             }
 
-            // Default tenant for unauthenticated requests (e.g., login/register)
             return 1;
         }
     }

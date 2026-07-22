@@ -1,12 +1,6 @@
-using LoanApplicationPlatform.API.DbContexts;
-using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Models;
+using LoanApplicationPlatform.API.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace LoanApplicationPlatform.API.Controllers
 {
@@ -14,76 +8,34 @@ namespace LoanApplicationPlatform.API.Controllers
     [Route("api/authentication")]
     public class AuthenticationController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
-        private readonly LoanApplicationPlatformContext _context;
+        private readonly IAuthService _authService;
 
-        public AuthenticationController(IConfiguration configuration, LoanApplicationPlatformContext context)
+        public AuthenticationController(IAuthService authService)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         }
 
         [HttpPost("authenticate")]
         public async Task<ActionResult<string>> Authenticate(LoginRequestDto loginRequest)
         {
-            var user = await ValidateUserCredentials(
-                loginRequest.Username,
-                loginRequest.Password);
-
-            if (user == null)
+            var token = await _authService.AuthenticateAsync(loginRequest);
+            if (token == null)
             {
                 return Unauthorized();
             }
 
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.ASCII.GetBytes(_configuration["Authentication:SecretForKey"] ?? string.Empty));
-            var signingCredentials = new SigningCredentials(
-                securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claimsForToken = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim("tenant_id", user.TenantId.ToString())
-            };
-
-            var jwtSecurityToken = new JwtSecurityToken(
-                _configuration["Authentication:Issuer"],
-                _configuration["Authentication:Audience"],
-                claimsForToken,
-                DateTime.UtcNow,
-                DateTime.UtcNow.AddHours(1),
-                signingCredentials);
-
-            var tokenToReturn = new JwtSecurityTokenHandler()
-               .WriteToken(jwtSecurityToken);
-
-            return Ok(tokenToReturn);
+            return Ok(token);
         }
 
         [HttpPost("register")]
         public async Task<ActionResult> RegisterApplicant(LoginRequestDto requestBody)
         {
-            if (string.IsNullOrWhiteSpace(requestBody.Username) || string.IsNullOrWhiteSpace(requestBody.Password))
+            var (success, errorMessage) = await _authService.RegisterApplicantAsync(requestBody);
+            if (!success)
             {
-                return BadRequest("Username and Password are required.");
+                if (errorMessage == "Username already exists.") return Conflict(errorMessage);
+                return BadRequest(errorMessage);
             }
-
-            var existingUser = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == requestBody.Username);
-            if (existingUser != null)
-            {
-                return Conflict("Username already exists.");
-            }
-
-            var newUser = new User
-            {
-                Username = requestBody.Username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
-                Role = "Applicant"
-            };
-
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
 
             return Ok();
         }
@@ -92,49 +44,14 @@ namespace LoanApplicationPlatform.API.Controllers
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
         {
-            if (string.IsNullOrWhiteSpace(requestBody.Username) || string.IsNullOrWhiteSpace(requestBody.Password) || string.IsNullOrWhiteSpace(requestBody.Role))
+            var (success, errorMessage) = await _authService.RegisterAdminUserAsync(requestBody);
+            if (!success)
             {
-                return BadRequest("Username, Password, and Role are required.");
+                if (errorMessage == "Username already exists.") return Conflict(errorMessage);
+                return BadRequest(errorMessage);
             }
-
-            var validRoles = new[] { "Applicant", "Reviewer", "Approver", "Admin" };
-            if (!validRoles.Contains(requestBody.Role))
-            {
-                return BadRequest($"Invalid role. Valid roles are: {string.Join(", ", validRoles)}.");
-            }
-
-            var existingUser = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == requestBody.Username);
-            if (existingUser != null)
-            {
-                return Conflict("Username already exists.");
-            }
-
-            var newUser = new User
-            {
-                Username = requestBody.Username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
-                Role = requestBody.Role
-            };
-
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
 
             return Ok();
-        }
-
-        private async Task<User?> ValidateUserCredentials(string? username, string? password)
-        {
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            {
-                return null;
-            }
-
-            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == username);
-            if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
-                return user;
-            }
-            return null;
         }
     }
 }
