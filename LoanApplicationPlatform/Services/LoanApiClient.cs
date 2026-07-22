@@ -41,16 +41,16 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return (false, $"Status: {response.StatusCode}");
         }
 
-        public async Task<(bool IsSuccess, string? ErrorMessage)> RegisterAsync(string username, string password)
+        public async Task<(bool IsSuccess, string? ErrorMessage)> RegisterAsync(string username, string password, int? tenantId = 1)
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/authentication/register", new { Username = username, Password = password });
+            var response = await _httpClient.PostAsJsonAsync("/api/authentication/register", new { Username = username, Password = password, TenantId = tenantId });
             if (response.IsSuccessStatusCode) return (true, null);
             return (false, await response.Content.ReadAsStringAsync());
         }
 
-        public async Task<(bool IsSuccess, string? ErrorMessage)> AdminRegisterUserAsync(string username, string password, string role)
+        public async Task<(bool IsSuccess, string? ErrorMessage)> AdminRegisterUserAsync(string username, string password, string role, int? tenantId = 1)
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/authentication/admin/register", new { Username = username, Password = password, Role = role });
+            var response = await _httpClient.PostAsJsonAsync("/api/authentication/admin/register", new { Username = username, Password = password, Role = role, TenantId = tenantId });
             if (response.IsSuccessStatusCode) return (true, null);
             return (false, await response.Content.ReadAsStringAsync());
         }

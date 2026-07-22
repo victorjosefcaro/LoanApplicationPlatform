@@ -108,8 +108,15 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             var roleChoice = Console.ReadLine();
             var role = roleChoice switch { "1" => "Applicant", "2" => "Reviewer", "3" => "Approver", "4" => "Admin", _ => "" };
             
-            var (success, error) = await apiClient.AdminRegisterUserAsync(username, password, role);
-            if (success) ConsoleHelper.PrintSuccess("Account created successfully!");
+            Console.WriteLine("\nSelect Tenant:");
+            Console.WriteLine("1. Default Lending Co (Tenant ID: 1)");
+            Console.WriteLine("2. Acme Finance (Tenant ID: 2)");
+            Console.Write("Choice (1 or 2, default 1): ");
+            var tenantChoice = Console.ReadLine()?.Trim();
+            int tenantId = tenantChoice == "2" ? 2 : 1;
+
+            var (success, error) = await apiClient.AdminRegisterUserAsync(username, password, role, tenantId);
+            if (success) ConsoleHelper.PrintSuccess($"Account created successfully for Tenant {tenantId}!");
             else ConsoleHelper.PrintError($"Account creation failed: {error}");
         }
 

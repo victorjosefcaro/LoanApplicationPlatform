@@ -39,8 +39,15 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             Console.Write("New Password: ");
             var password = Console.ReadLine() ?? "";
 
-            var (success, error) = await apiClient.RegisterAsync(username, password);
-            if (success) ConsoleHelper.PrintSuccess("Registration successful! You can now login.");
+            Console.WriteLine("\nSelect Tenant:");
+            Console.WriteLine("1. Default Lending Co (Tenant ID: 1)");
+            Console.WriteLine("2. Acme Finance (Tenant ID: 2)");
+            Console.Write("Choice (1 or 2, default 1): ");
+            var tenantChoice = Console.ReadLine()?.Trim();
+            int tenantId = tenantChoice == "2" ? 2 : 1;
+
+            var (success, error) = await apiClient.RegisterAsync(username, password, tenantId);
+            if (success) ConsoleHelper.PrintSuccess($"Registration successful for Tenant {tenantId}! You can now login.");
             else ConsoleHelper.PrintError($"Registration failed: {error}");
         }
     }

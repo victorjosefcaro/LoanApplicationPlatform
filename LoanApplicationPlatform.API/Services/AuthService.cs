@@ -75,6 +75,11 @@ namespace LoanApplicationPlatform.API.Services
                 Role = "Applicant"
             };
 
+            if (requestBody.TenantId.HasValue && requestBody.TenantId.Value > 0)
+            {
+                newUser.TenantId = requestBody.TenantId.Value;
+            }
+
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();
 
@@ -106,6 +111,11 @@ namespace LoanApplicationPlatform.API.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
                 Role = requestBody.Role
             };
+
+            if (requestBody.TenantId.HasValue && requestBody.TenantId.Value > 0)
+            {
+                newUser.TenantId = requestBody.TenantId.Value;
+            }
 
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();
