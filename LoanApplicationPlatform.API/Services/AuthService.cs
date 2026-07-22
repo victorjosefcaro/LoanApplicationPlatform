@@ -49,7 +49,7 @@ namespace LoanApplicationPlatform.API.Services
                 _configuration["Authentication:Audience"],
                 claimsForToken,
                 DateTime.UtcNow,
-                DateTime.UtcNow.AddHours(1),
+                DateTime.UtcNow.AddHours(2),
                 signingCredentials);
 
             return new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
