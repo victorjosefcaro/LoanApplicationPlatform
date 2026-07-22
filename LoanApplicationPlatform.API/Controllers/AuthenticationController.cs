@@ -43,7 +43,8 @@ namespace LoanApplicationPlatform.API.Controllers
             var claimsForToken = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("tenant_id", user.TenantId.ToString())
             };
 
             var jwtSecurityToken = new JwtSecurityToken(
@@ -68,7 +69,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 return BadRequest("Username and Password are required.");
             }
 
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == requestBody.Username);
+            var existingUser = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == requestBody.Username);
             if (existingUser != null)
             {
                 return Conflict("Username already exists.");
@@ -102,7 +103,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 return BadRequest($"Invalid role. Valid roles are: {string.Join(", ", validRoles)}.");
             }
 
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == requestBody.Username);
+            var existingUser = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == requestBody.Username);
             if (existingUser != null)
             {
                 return Conflict("Username already exists.");
@@ -128,7 +129,7 @@ namespace LoanApplicationPlatform.API.Controllers
                 return null;
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == username);
             if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 return user;

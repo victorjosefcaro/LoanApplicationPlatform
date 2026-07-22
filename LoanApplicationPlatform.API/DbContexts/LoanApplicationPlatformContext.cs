@@ -1,20 +1,27 @@
 using Microsoft.EntityFrameworkCore;
 using LoanApplicationPlatform.API.Constants;
 using LoanApplicationPlatform.API.Entities;
+using LoanApplicationPlatform.API.Services;
 
 namespace LoanApplicationPlatform.API.DbContexts
 {
     public class LoanApplicationPlatformContext : DbContext
     {
+        private readonly ITenantService _tenantService;
+
+        public DbSet<Tenant> Tenants { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<LoanApplication> LoanApplications { get; set; } = null!;
         public DbSet<PaymentSchedule> PaymentSchedules { get; set; } = null!;
-        public DbSet<Treasury> Treasury { get; set; }
+        public DbSet<Treasury> Treasury { get; set; } = null!;
         public DbSet<TreasuryTransaction> TreasuryTransactions { get; set; } = null!;
 
-        public LoanApplicationPlatformContext(DbContextOptions<LoanApplicationPlatformContext> options)
+        public LoanApplicationPlatformContext(
+            DbContextOptions<LoanApplicationPlatformContext> options,
+            ITenantService tenantService)
             : base(options)
         {
+            _tenantService = tenantService ?? throw new ArgumentNullException(nameof(tenantService));
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,16 +39,61 @@ namespace LoanApplicationPlatform.API.DbContexts
                 .HasConversion<string>()
                 .HasMaxLength(50);
 
-            // Seed initial data
-            modelBuilder.Entity<Treasury>().HasData(
-                new Treasury { Id = 1, Balance = 1000000m } // Start with 1M in the treasury
+            // Configure Global Query Filters for Multitenancy
+            modelBuilder.Entity<User>()
+                .HasQueryFilter(u => u.TenantId == _tenantService.GetCurrentTenantId());
+
+            modelBuilder.Entity<LoanApplication>()
+                .HasQueryFilter(l => l.TenantId == _tenantService.GetCurrentTenantId());
+
+            modelBuilder.Entity<PaymentSchedule>()
+                .HasQueryFilter(p => p.TenantId == _tenantService.GetCurrentTenantId());
+
+            modelBuilder.Entity<Treasury>()
+                .HasQueryFilter(t => t.TenantId == _tenantService.GetCurrentTenantId());
+
+            modelBuilder.Entity<TreasuryTransaction>()
+                .HasQueryFilter(t => t.TenantId == _tenantService.GetCurrentTenantId());
+
+            // Seed Default Tenant
+            modelBuilder.Entity<Tenant>().HasData(
+                new Tenant { Id = 1, Name = "Default Lending Co" }
             );
 
-            // Seed Admin User (Using a real BCrypt hash for "password")
-            modelBuilder.Entity<User>().HasData(
-                // Pre-computed BCrypt hash for "password" — avoids migration churn from random salt generation
-                new User { Id = 1, Username = "admin", PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.", Role = "Admin" }
+            // Seed initial Treasury for Default Tenant
+            modelBuilder.Entity<Treasury>().HasData(
+                new Treasury { Id = 1, Balance = 1000000m, TenantId = 1 }
             );
+
+            // Seed Admin User for Default Tenant
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    Id = 1,
+                    Username = "admin",
+                    PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
+                    Role = "Admin",
+                    TenantId = 1
+                }
+            );
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            int currentTenantId = _tenantService.GetCurrentTenantId();
+
+            foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    if (entry.Entity.TenantId == 0)
+                    {
+                        entry.Entity.TenantId = currentTenantId;
+                    }
+                }
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
         }
     }
 }

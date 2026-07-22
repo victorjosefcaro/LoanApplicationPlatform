@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LoanApplicationPlatform.API.Entities
 {
-    public class TreasuryTransaction
+    public class TreasuryTransaction : ITenantEntity
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -17,5 +17,9 @@ namespace LoanApplicationPlatform.API.Entities
         public string Type { get; set; } = string.Empty;
 
         public int? ReferenceId { get; set; }
+
+        [ForeignKey("Tenant")]
+        public int TenantId { get; set; }
+        public Tenant? Tenant { get; set; }
     }
 }

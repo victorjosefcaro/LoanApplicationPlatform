@@ -20,7 +20,8 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                 var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
                 var token = handler.ReadJwtToken(apiClient.JwtToken);
                 var currentRole = token.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-                ConsoleHelper.PrintSuccess("Login successful!");
+                var tenantId = token.Claims.FirstOrDefault(c => c.Type == "tenant_id")?.Value;
+                ConsoleHelper.PrintSuccess($"Login successful! (Tenant ID: {tenantId})");
                 return currentRole;
             }
             else

@@ -58,6 +58,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireApplicantRole", policy => policy.RequireClaim("role", "Applicant"));
 });
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddDbContext<LoanApplicationPlatform.API.DbContexts.LoanApplicationPlatformContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

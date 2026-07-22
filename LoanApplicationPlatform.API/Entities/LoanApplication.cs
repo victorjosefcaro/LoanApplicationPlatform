@@ -4,7 +4,7 @@ using LoanApplicationPlatform.API.Constants;
 
 namespace LoanApplicationPlatform.API.Entities
 {
-    public class LoanApplication
+    public class LoanApplication : ITenantEntity
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -36,5 +36,9 @@ namespace LoanApplicationPlatform.API.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<PaymentSchedule> PaymentSchedules { get; set; } = new List<PaymentSchedule>();
+
+        [ForeignKey("Tenant")]
+        public int TenantId { get; set; }
+        public Tenant? Tenant { get; set; }
     }
 }

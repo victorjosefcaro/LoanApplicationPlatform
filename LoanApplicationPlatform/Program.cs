@@ -27,8 +27,11 @@ while (true)
 
     if (apiClient.JwtToken != null)
     {
+        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(apiClient.JwtToken);
+        var tenantId = token.Claims.FirstOrDefault(c => c.Type == "tenant_id")?.Value;
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[ Status: Logged In | Role: {currentRole} ]");
+        Console.WriteLine($"[ Status: Logged In | Role: {currentRole} | Tenant ID: {tenantId} ]");
         Console.ResetColor();
     }
     else
