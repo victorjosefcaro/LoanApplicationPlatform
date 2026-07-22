@@ -83,9 +83,9 @@ namespace LoanApplicationPlatform.API.Services
 
             if (application.ApplicantId != userId) return (false, "Access denied.", false, true);
 
-            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned)
+            if (application.Status != LoanStatus.Returned)
             {
-                return (false, "Can only edit applications in Draft or Returned status.", false, false);
+                return (false, "Can only edit applications in Returned status.", false, false);
             }
 
             _mapper.Map(dto, application);
@@ -101,9 +101,9 @@ namespace LoanApplicationPlatform.API.Services
 
             if (application.ApplicantId != userId) return (false, "Access denied.", false, true);
 
-            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned)
+            if (application.Status != LoanStatus.Returned)
             {
-                return (false, "Can only submit applications in Draft or Returned status.", false, false);
+                return (false, "Can only submit applications in Returned status.", false, false);
             }
 
             if (application.TermInMonths > 0)
@@ -128,7 +128,7 @@ namespace LoanApplicationPlatform.API.Services
 
             if (application.ApplicantId != userId) return (false, "Access denied.", false, true);
 
-            if (application.Status != LoanStatus.Draft && application.Status != LoanStatus.Returned && application.Status != LoanStatus.Submitted)
+            if (application.Status != LoanStatus.Returned && application.Status != LoanStatus.Submitted)
             {
                 return (false, "Application cannot be cancelled at this stage.", false, false);
             }

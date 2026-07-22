@@ -100,6 +100,12 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> CancelApplicationAsync(int id)
+        {
+            var response = await _httpClient.PatchAsync($"/api/loanapplications/{id}/cancel", null);
+            return response.IsSuccessStatusCode;
+        }
+
         public async Task<bool> ReviewApplicationAsync(int id, string status, string? remarks)
         {
             var response = await _httpClient.PatchAsJsonAsync($"/api/loanapplications/{id}/review", new { Status = status, Remarks = remarks });

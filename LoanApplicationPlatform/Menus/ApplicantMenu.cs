@@ -13,9 +13,10 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             Console.WriteLine("1. View My Applications");
             Console.WriteLine("2. Create & Submit Application");
             Console.WriteLine("3. Edit & Resubmit Returned Application");
-            Console.WriteLine("4. View Payment Schedules");
-            Console.WriteLine("5. Make a Payment");
-            Console.WriteLine("6. Logout");
+            Console.WriteLine("4. Cancel Application");
+            Console.WriteLine("5. View Payment Schedules");
+            Console.WriteLine("6. Make a Payment");
+            Console.WriteLine("7. Logout");
             Console.Write("\nSelect an option: ");
             
             var choice = Console.ReadLine();
@@ -31,12 +32,15 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     await EditReturnedApplication(apiClient);
                     break;
                 case "4":
-                    await ViewPaymentSchedules(apiClient);
+                    await CancelApplication(apiClient);
                     break;
                 case "5":
-                    await MakePayment(apiClient);
+                    await ViewPaymentSchedules(apiClient);
                     break;
                 case "6":
+                    await MakePayment(apiClient);
+                    break;
+                case "7":
                     logoutCallback();
                     break;
                 default:
@@ -184,6 +188,38 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId);
             if (paySuccess) ConsoleHelper.PrintSuccess("Payment notified successfully! Waiting for Admin to post.");
             else ConsoleHelper.PrintError("Payment notification failed.");
+        }
+
+        private static async Task CancelApplication(LoanApiClient apiClient)
+        {
+            var apps = await apiClient.GetApplicationsAsync(1, 1000);
+            var cancellable = apps?.Items?.Where(a => a.Status == "Submitted" || a.Status == "Returned").ToList();
+            if (cancellable == null || !cancellable.Any())
+            {
+                ConsoleHelper.PrintError("You have no applications eligible for cancellation.");
+                return;
+            }
+
+            Console.WriteLine("\nApplications Eligible for Cancellation:");
+            foreach (var a in cancellable)
+                Console.WriteLine($"- ID: {a.Id}, Amount: {a.Amount:C}, Status: {a.Status}");
+
+            Console.Write("\nEnter Application ID to Cancel: ");
+            if (!int.TryParse(Console.ReadLine(), out var cancelId))
+            {
+                ConsoleHelper.PrintError("Invalid ID.");
+                return;
+            }
+
+            if (!cancellable.Any(a => a.Id == cancelId))
+            {
+                ConsoleHelper.PrintError("Invalid application selection.");
+                return;
+            }
+
+            var success = await apiClient.CancelApplicationAsync(cancelId);
+            if (success) ConsoleHelper.PrintSuccess("Application cancelled successfully!");
+            else ConsoleHelper.PrintError("Failed to cancel application.");
         }
     }
 }
