@@ -29,11 +29,11 @@ namespace LoanApplicationPlatform.API.Services
 
             if (role == "Applicant")
             {
-                applications = await _loanRepository.GetLoanApplicationsAsync(parameters, applicantId: userId);
+                applications = await _loanRepository.GetLoanApplicationsAsync(parameters, applicantId: userId, status: parameters.Status);
             }
             else
             {
-                applications = await _loanRepository.GetLoanApplicationsAsync(parameters);
+                applications = await _loanRepository.GetLoanApplicationsAsync(parameters, status: parameters.Status);
             }
 
             var dtos = _mapper.Map<IEnumerable<LoanApplicationDto>>(applications);

@@ -55,11 +55,16 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return (false, await response.Content.ReadAsStringAsync());
         }
 
-        public async Task<PagedResponse<ApplicationDto>?> GetApplicationsAsync(int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResponse<ApplicationDto>?> GetApplicationsAsync(int pageNumber = 1, int pageSize = 10, string? status = null)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/loanapplications?pageNumber={pageNumber}&pageSize={pageSize}");
+                var url = $"api/loanapplications?pageNumber={pageNumber}&pageSize={pageSize}";
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    url += $"&status={Uri.EscapeDataString(status)}";
+                }
+                var response = await _httpClient.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
                     var data = await response.Content.ReadFromJsonAsync<IEnumerable<ApplicationDto>>();
