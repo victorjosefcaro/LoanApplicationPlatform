@@ -24,9 +24,39 @@ namespace LoanApplicationPlatform.API.DbContexts
             _tenantService = tenantService ?? throw new ArgumentNullException(nameof(tenantService));
         }
 
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            base.ConfigureConventions(configurationBuilder);
+            configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure decimal column types to eliminate truncation warnings
+            modelBuilder.Entity<LoanApplication>(entity =>
+            {
+                entity.Property(l => l.Amount).HasColumnType("decimal(18,2)");
+                entity.Property(l => l.InterestRate).HasColumnType("decimal(18,2)");
+                entity.Property(l => l.MonthlyIncome).HasColumnType("decimal(18,2)");
+            });
+
+            modelBuilder.Entity<PaymentSchedule>(entity =>
+            {
+                entity.Property(p => p.AmountDue).HasColumnType("decimal(18,2)");
+                entity.Property(p => p.AmountPaid).HasColumnType("decimal(18,2)");
+            });
+
+            modelBuilder.Entity<Treasury>(entity =>
+            {
+                entity.Property(t => t.Balance).HasColumnType("decimal(18,2)");
+            });
+
+            modelBuilder.Entity<TreasuryTransaction>(entity =>
+            {
+                entity.Property(t => t.Amount).HasColumnType("decimal(18,2)");
+            });
 
             // Store enums as strings in the database for readability
             modelBuilder.Entity<LoanApplication>()
@@ -38,6 +68,45 @@ namespace LoanApplicationPlatform.API.DbContexts
                 .Property(p => p.Status)
                 .HasConversion<string>()
                 .HasMaxLength(50);
+
+            // Prevent multiple cascade paths to the same table (SQL Server limitation).
+            // TenantId FKs use Restrict since tenant deletion is an administrative action
+            // that should be handled explicitly, not cascaded automatically.
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Tenant)
+                .WithMany()
+                .HasForeignKey(u => u.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LoanApplication>()
+                .HasOne(l => l.Tenant)
+                .WithMany()
+                .HasForeignKey(l => l.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LoanApplication>()
+                .HasOne(l => l.Applicant)
+                .WithMany()
+                .HasForeignKey(l => l.ApplicantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PaymentSchedule>()
+                .HasOne(p => p.Tenant)
+                .WithMany()
+                .HasForeignKey(p => p.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Treasury>()
+                .HasOne(t => t.Tenant)
+                .WithMany()
+                .HasForeignKey(t => t.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TreasuryTransaction>()
+                .HasOne(t => t.Tenant)
+                .WithMany()
+                .HasForeignKey(t => t.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Configure Global Query Filters for Multitenancy
             modelBuilder.Entity<User>()
@@ -57,42 +126,32 @@ namespace LoanApplicationPlatform.API.DbContexts
 
             // Seed Tenants
             modelBuilder.Entity<Tenant>().HasData(
-                new Tenant { Id = 1, Name = "Default Lending Co" },
-                new Tenant { Id = 2, Name = "Acme Finance" }
+                new Tenant { Id = 1, Name = "Tenant 1" },
+                new Tenant { Id = 2, Name = "Tenant 2" }
             );
 
             // Seed initial Treasuries
             modelBuilder.Entity<Treasury>().HasData(
                 new Treasury { Id = 1, Balance = 1000000m, TenantId = 1 },
-                new Treasury { Id = 2, Balance = 500000m, TenantId = 2 }
+                new Treasury { Id = 2, Balance = 2000000m, TenantId = 2 }
             );
+
+            // BCrypt hash for "password123"
+            const string defaultPasswordHash = "$2a$11$0IAZiPtgMtoVLj7FFEC4YewGS1HZeelrFS66dmExWVaeeirTLHjey";
 
             // Seed Users for Tenants
             modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = 1,
-                    Username = "admin",
-                    PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
-                    Role = "Admin",
-                    TenantId = 1
-                },
-                new User
-                {
-                    Id = 2,
-                    Username = "acme_admin",
-                    PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
-                    Role = "Admin",
-                    TenantId = 2
-                },
-                new User
-                {
-                    Id = 3,
-                    Username = "acme_applicant",
-                    PasswordHash = "$2a$11$3ieT9rszDmCDFAmvST.IE.CBESY005xlEuNWBhleQUQNlA2kKHMV.",
-                    Role = "Applicant",
-                    TenantId = 2
-                }
+                // Tenant 1 Users
+                new User { Id = 1, Username = "t1_admin",     PasswordHash = defaultPasswordHash, Role = "Admin",     TenantId = 1 },
+                new User { Id = 2, Username = "t1_applicant", PasswordHash = defaultPasswordHash, Role = "Applicant", TenantId = 1 },
+                new User { Id = 3, Username = "t1_reviewer",  PasswordHash = defaultPasswordHash, Role = "Reviewer",  TenantId = 1 },
+                new User { Id = 4, Username = "t1_approver",  PasswordHash = defaultPasswordHash, Role = "Approver",  TenantId = 1 },
+
+                // Tenant 2 Users
+                new User { Id = 5, Username = "t2_admin",     PasswordHash = defaultPasswordHash, Role = "Admin",     TenantId = 2 },
+                new User { Id = 6, Username = "t2_applicant", PasswordHash = defaultPasswordHash, Role = "Applicant", TenantId = 2 },
+                new User { Id = 7, Username = "t2_reviewer",  PasswordHash = defaultPasswordHash, Role = "Reviewer",  TenantId = 2 },
+                new User { Id = 8, Username = "t2_approver",  PasswordHash = defaultPasswordHash, Role = "Approver",  TenantId = 2 }
             );
         }
 

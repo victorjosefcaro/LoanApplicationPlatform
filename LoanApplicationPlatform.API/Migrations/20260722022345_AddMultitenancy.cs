@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -108,7 +108,7 @@ namespace LoanApplicationPlatform.API.Migrations
                 column: "TenantId",
                 principalTable: "Tenants",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_PaymentSchedules_Tenants_TenantId",
@@ -116,7 +116,7 @@ namespace LoanApplicationPlatform.API.Migrations
                 column: "TenantId",
                 principalTable: "Tenants",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Treasury_Tenants_TenantId",
@@ -124,7 +124,7 @@ namespace LoanApplicationPlatform.API.Migrations
                 column: "TenantId",
                 principalTable: "Tenants",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_TreasuryTransactions_Tenants_TenantId",
@@ -132,7 +132,7 @@ namespace LoanApplicationPlatform.API.Migrations
                 column: "TenantId",
                 principalTable: "Tenants",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Users_Tenants_TenantId",
@@ -140,7 +140,7 @@ namespace LoanApplicationPlatform.API.Migrations
                 column: "TenantId",
                 principalTable: "Tenants",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />

@@ -1,5 +1,6 @@
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoanApplicationPlatform.API.Controllers
@@ -39,10 +40,9 @@ namespace LoanApplicationPlatform.API.Controllers
 
             return Ok();
         }
-
         [HttpPost("admin/register")]
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-        public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
+		[Authorize(Roles = "Admin")]
+		public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
         {
             var (success, errorMessage) = await _authService.RegisterAdminUserAsync(requestBody);
             if (!success)
