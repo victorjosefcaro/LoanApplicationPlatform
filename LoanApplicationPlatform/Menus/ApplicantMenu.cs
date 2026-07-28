@@ -106,11 +106,9 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                 
                 var upSuccess = await apiClient.UpdateApplicationAsync(editId, new { ApplicantName = ename, Amount = eamt, TermInMonths = eterm, MonthlyIncome = einc, Purpose = epurpose });
                 if (upSuccess) {
-                    var subSuccess = await apiClient.SubmitApplicationAsync(editId);
-                    if (subSuccess) ConsoleHelper.PrintSuccess("Application successfully updated and resubmitted!");
-                    else ConsoleHelper.PrintError("Updated successfully, but failed to resubmit (check income requirements).");
+                    ConsoleHelper.PrintSuccess("Application successfully updated and resubmitted!");
                 } else {
-                    ConsoleHelper.PrintError("Failed to update application.");
+                    ConsoleHelper.PrintError("Failed to update and resubmit application (check income requirements).");
                 }
             }
         }
