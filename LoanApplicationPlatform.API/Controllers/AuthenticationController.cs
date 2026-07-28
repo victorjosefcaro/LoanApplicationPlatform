@@ -16,7 +16,7 @@ namespace LoanApplicationPlatform.API.Controllers
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         }
 
-        [HttpPost("authenticate")]
+        [HttpPost("login")]
         public async Task<ActionResult<string>> Authenticate(LoginRequestDto loginRequest)
         {
             var token = await _authService.AuthenticateAsync(loginRequest);
