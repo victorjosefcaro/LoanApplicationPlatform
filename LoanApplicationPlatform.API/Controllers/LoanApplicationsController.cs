@@ -90,21 +90,6 @@ namespace LoanApplicationPlatform.API.Controllers
             return NoContent();
         }
 
-        [HttpPatch("{id}/submit")]
-        [Authorize(Roles = "Applicant")]
-        public async Task<ActionResult> SubmitApplication(int id)
-        {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdStr == null) return Unauthorized();
-
-            var (success, errorMessage, notFound, forbid) = await _loanApplicationService.SubmitApplicationAsync(id, int.Parse(userIdStr));
-            if (notFound) return NotFound();
-            if (forbid) return Forbid();
-            if (!success) return BadRequest(errorMessage);
-
-            return NoContent();
-        }
-
         [HttpPatch("{id}/cancel")]
         [Authorize(Roles = "Applicant")]
         public async Task<ActionResult> CancelApplication(int id)

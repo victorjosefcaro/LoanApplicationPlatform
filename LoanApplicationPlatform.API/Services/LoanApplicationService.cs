@@ -85,33 +85,17 @@ namespace LoanApplicationPlatform.API.Services
 
             if (application.Status != LoanStatus.Returned)
             {
-                return (false, "Can only edit applications in Returned status.", false, false);
+                return (false, "Can only update and resubmit applications in Returned status.", false, false);
             }
 
             _mapper.Map(dto, application);
-            await _loanRepository.SaveChangesAsync();
-
-            return (true, null, false, false);
-        }
-
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> SubmitApplicationAsync(int id, int userId)
-        {
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return (false, "Application not found.", true, false);
-
-            if (application.ApplicantId != userId) return (false, "Access denied.", false, true);
-
-            if (application.Status != LoanStatus.Returned)
-            {
-                return (false, "Can only submit applications in Returned status.", false, false);
-            }
 
             if (application.TermInMonths > 0)
             {
                 decimal estimatedMonthlyPayment = application.Amount / application.TermInMonths;
                 if (estimatedMonthlyPayment > application.MonthlyIncome)
                 {
-                    return (false, $"Submission rejected: Your monthly income ({application.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.", false, false);
+                    return (false, $"Resubmission rejected: Your monthly income ({application.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.", false, false);
                 }
             }
 
