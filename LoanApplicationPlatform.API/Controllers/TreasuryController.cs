@@ -19,7 +19,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpGet("balance")]
-        [Authorize(Roles = "Admin,Approver")]
+        [Authorize(Roles = "Admin,Approver,Reviewer")]
         public async Task<ActionResult> GetBalance()
         {
             var treasury = await _treasuryRepository.GetTreasuryAsync();
@@ -53,7 +53,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpGet("transactions")]
-        [Authorize(Roles = "Admin,Approver")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> GetTransactions([FromQuery] ResourceParameters parameters)
         {
             var transactions = await _treasuryRepository.GetTreasuryTransactionsAsync(parameters);
