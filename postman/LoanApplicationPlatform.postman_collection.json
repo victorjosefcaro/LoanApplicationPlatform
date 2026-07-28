@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a8f3b210-91cd-4e89-b827-loanappplatform",
 		"name": "Loan Application Platform API",
-		"description": "Postman Collection for QA testing of Loan Application Platform API, including Multi-tenancy, Role-based Access Control (Applicant, Reviewer, Approver, Admin), and full Loan/Payment/Treasury workflows.",
+		"description": "Comprehensive Postman Collection for QA testing of Loan Application Platform API, covering Multi-tenancy, RBAC, Server-side Filtering, and the full end-to-end Loan/Payment/Treasury workflows.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -10,7 +10,7 @@
 			"name": "01. Authentication",
 			"item": [
 				{
-					"name": "Authenticate (Login)",
+					"name": "Login (t1_applicant)",
 					"event": [
 						{
 							"listen": "test",
@@ -18,11 +18,9 @@
 								"exec": [
 									"if (pm.response.code === 200) {",
 									"    var token = pm.response.text();",
-									"    if (token.startsWith('\"') && token.endsWith('\"')) {",
-									"        token = JSON.parse(token);",
-									"    }",
+									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
 									"    pm.environment.set(\"bearer_token\", token);",
-									"    console.log(\"Saved bearer_token to environment.\");",
+									"    console.log(\"Saved applicant bearer_token.\");",
 									"}"
 								],
 								"type": "text/javascript"
@@ -32,56 +30,182 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+							"raw": "{\n  \"username\": \"t1_applicant\",\n  \"password\": \"password123\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/authentication/authenticate",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"authentication",
-								"authenticate"
-							]
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
 						},
-						"description": "Authenticates a user and automatically sets `bearer_token` in the active environment."
+						"description": "Logs in as Tenant 1 Applicant user."
 					},
 					"response": []
 				},
 				{
-					"name": "Register Applicant",
+					"name": "Login (t1_reviewer)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var token = pm.response.text();",
+									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
+									"    pm.environment.set(\"bearer_token\", token);",
+									"    console.log(\"Saved reviewer bearer_token.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"applicant_qa\",\n  \"password\": \"Password123!\",\n  \"tenantId\": 1\n}"
+							"raw": "{\n  \"username\": \"t1_reviewer\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Logs in as Tenant 1 Reviewer user."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (t1_approver)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var token = pm.response.text();",
+									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
+									"    pm.environment.set(\"bearer_token\", token);",
+									"    console.log(\"Saved approver bearer_token.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"t1_approver\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Logs in as Tenant 1 Approver user."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (t1_admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var token = pm.response.text();",
+									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
+									"    pm.environment.set(\"bearer_token\", token);",
+									"    console.log(\"Saved admin bearer_token.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"t1_admin\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Logs in as Tenant 1 Admin user."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (t2_admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var token = pm.response.text();",
+									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
+									"    pm.environment.set(\"bearer_token\", token);",
+									"    console.log(\"Saved t2_admin bearer_token.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"t2_admin\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Logs in as Tenant 2 Admin user."
+					},
+					"response": []
+				},
+				{
+					"name": "Register Applicant (Public)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"new_qa_applicant\",\n  \"password\": \"password123\",\n  \"tenantId\": 1\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/authentication/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"authentication",
-								"register"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "register" ]
 						},
-						"description": "Public endpoint to register a new user with the Applicant role."
+						"description": "Public endpoint to register a new applicant."
 					},
 					"response": []
 				},
@@ -90,97 +214,42 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"reviewer_qa\",\n  \"password\": \"Password123!\",\n  \"role\": \"Reviewer\",\n  \"tenantId\": 1\n}"
+							"raw": "{\n  \"username\": \"new_qa_reviewer\",\n  \"password\": \"password123\",\n  \"role\": \"Reviewer\",\n  \"tenantId\": 1\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/authentication/admin/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"authentication",
-								"admin",
-								"register"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "admin", "register" ]
 						},
-						"description": "Admin endpoint to register users with custom roles (Reviewer, Approver, Admin, Applicant)."
+						"description": "Admin endpoint to create a user with specified Role (Applicant, Reviewer, Approver, Admin)."
 					},
 					"response": []
 				}
 			]
 		},
 		{
-			"name": "02. Loan Applications",
+			"name": "02. Loan Application Lifecycle (E2E Workflow)",
 			"item": [
 				{
-					"name": "Get All Applications",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications?pageNumber=1&pageSize=10",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications"
-							],
-							"query": [
-								{
-									"key": "pageNumber",
-									"value": "1"
-								},
-								{
-									"key": "pageSize",
-									"value": "10"
-								}
-							]
-						},
-						"description": "Retrieves paginated loan applications filtered by user role and tenant. Returns `X-Pagination` header."
-					},
-					"response": []
-				},
-				{
-					"name": "Create Application (Applicant)",
+					"name": "1. Applicant - Create Loan Application",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.code === 201) {",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
 									"    var data = pm.response.json();",
-									"    if (data && data.id) {",
-									"        pm.environment.set(\"loan_application_id\", data.id);",
-									"        console.log(\"Saved loan_application_id:\", data.id);",
+									"    if (data.id) {",
+									"        pm.environment.set(\"loan_application_id\", data.id.toString());",
+									"        console.log(\"Saved loan_application_id: \" + data.id);",
 									"    }",
 									"}"
 								],
@@ -191,288 +260,157 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"applicantName\": \"Jane Doe\",\n  \"amount\": 50000.00,\n  \"termInMonths\": 12,\n  \"monthlyIncome\": 8500.00,\n  \"purpose\": \"Small Business Expansion\"\n}"
+							"raw": "{\n  \"applicantName\": \"QA Applicant\",\n  \"amount\": 100000.00,\n  \"termInMonths\": 6,\n  \"monthlyIncome\": 45000.00,\n  \"purpose\": \"Personal Loan\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications" ]
 						},
-						"description": "Creates a new draft loan application. Automatically sets `loan_application_id` in environment upon success."
+						"description": "Applicant creates a loan application. Status automatically sets to Submitted."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Application By ID",
+					"name": "2. Get Loan Applications (Server-side Filter: ?status=Submitted)",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}"
+							"raw": "{{baseUrl}}/api/loanapplications?status=Submitted&pageNumber=1&pageSize=10",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications" ],
+							"query": [
+								{ "key": "status", "value": "Submitted" },
+								{ "key": "pageNumber", "value": "1" },
+								{ "key": "pageSize", "value": "10" }
 							]
 						},
-						"description": "Fetches a specific loan application by ID."
+						"description": "Server-side filtered listing of applications by status."
 					},
 					"response": []
 				},
 				{
-					"name": "Update Application (Draft)",
+					"name": "3. Applicant - Resubmit Returned Application",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"applicantName\": \"Jane Doe Updated\",\n  \"amount\": 60000.00,\n  \"termInMonths\": 24,\n  \"monthlyIncome\": 9000.00,\n  \"purpose\": \"Equipment Purchase and Expansion\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}"
-							]
-						},
-						"description": "Updates a draft loan application before submission."
-					},
-					"response": []
-				},
-				{
-					"name": "Submit Application",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "PATCH",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/submit",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"submit"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "submit" ]
 						},
-						"description": "Submits a Draft or Returned application for review. Status changes to Submitted."
+						"description": "Resubmits an application that was marked as Returned."
 					},
 					"response": []
 				},
 				{
-					"name": "Review Application (Reviewer)",
+					"name": "4. Reviewer - Review Application (Reviewed / Returned / Rejected)",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "PATCH",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"status\": \"Reviewed\",\n  \"remarks\": \"Financial income verified and background check clear.\"\n}"
+							"raw": "{\n  \"status\": \"Reviewed\",\n  \"remarks\": \"Verified credit profile & employment status. OK for approval.\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/review",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"review"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "review" ]
 						},
-						"description": "Reviewer endpoint to mark application as Reviewed, Returned, or Rejected."
+						"description": "Reviewer evaluates application. Status can be set to Reviewed, Returned, or Rejected."
 					},
 					"response": []
 				},
 				{
-					"name": "Approve Application (Approver)",
+					"name": "5. Approver - Approve Application (Approved / Returned / Rejected)",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "PATCH",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"status\": \"Approved\",\n  \"remarks\": \"Loan terms approved for disbursement.\"\n}"
+							"raw": "{\n  \"status\": \"Approved\",\n  \"remarks\": \"Final approval granted.\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/approve",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"approve"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "approve" ]
 						},
-						"description": "Approver endpoint to approve or reject a reviewed application."
+						"description": "Approver evaluates reviewed application. Status can be set to Approved, Returned, or Rejected."
 					},
 					"response": []
 				},
 				{
-					"name": "Release Funds (Admin)",
+					"name": "6. Admin - Release Loan Funds",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "POST",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/release",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"release"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "release" ]
 						},
-						"description": "Admin endpoint to release funds. Generates payment schedules and deducts from Treasury."
+						"description": "Admin releases funds for an Approved loan. Validates Treasury balance, deducts funds, logs transaction, and generates PaymentSchedules."
 					},
 					"response": []
 				},
 				{
-					"name": "Cancel Application (Applicant)",
+					"name": "7. Applicant - Cancel Application",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
-						"method": "PATCH",
+						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/cancel",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"cancel"
-							]
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}" ]
 						},
-						"description": "Allows Applicant to cancel a Draft application."
+						"description": "Applicant cancels their loan application (only allowed in Submitted or Returned status)."
 					},
 					"response": []
 				}
 			]
 		},
 		{
-			"name": "03. Payments",
+			"name": "03. Payment & Amortization Workflow",
 			"item": [
 				{
-					"name": "Get Payment Schedules",
+					"name": "1. Get Payment Schedules",
 					"event": [
 						{
 							"listen": "test",
@@ -481,8 +419,8 @@
 									"if (pm.response.code === 200) {",
 									"    var list = pm.response.json();",
 									"    if (list && list.length > 0) {",
-									"        pm.environment.set(\"schedule_id\", list[0].id);",
-									"        console.log(\"Saved schedule_id:\", list[0].id);",
+									"        pm.environment.set(\"schedule_id\", list[0].id.toString());",
+									"        console.log(\"Saved schedule_id: \" + list[0].id);",
 									"    }",
 									"}"
 								],
@@ -493,218 +431,188 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"payments"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "payments" ]
 						},
-						"description": "Fetches amortization/payment schedule items for a released loan."
+						"description": "Fetches payment amortization schedule for a released loan."
 					},
 					"response": []
 				},
 				{
-					"name": "Submit Payment (Applicant)",
+					"name": "2. Applicant - Submit Payment",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments/{{schedule_id}}/submit",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"payments",
-								"{{schedule_id}}",
-								"submit"
-							]
-						},
-						"description": "Applicant submits proof/intent of payment for a schedule item."
-					},
-					"response": []
-				},
-				{
-					"name": "Post Payment (Admin)",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"amount\": 5000.00\n}"
+							"raw": "{\n  \"amount\": 10000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments/{{schedule_id}}/submit",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "payments", "{{schedule_id}}", "submit" ]
+						},
+						"description": "Applicant notifies payment sent, providing the submitted payment amount."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Admin - Post Verified Payment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
+						},
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 10000.00\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments/{{schedule_id}}/post",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"loanapplications",
-								"{{loan_application_id}}",
-								"payments",
-								"{{schedule_id}}",
-								"post"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "payments", "{{schedule_id}}", "post" ]
 						},
-						"description": "Admin posts and confirms payment for a schedule item, updating Treasury."
+						"description": "Admin posts verified payment to Treasury. Marks schedule as Paid or PartiallyPaid and credits Treasury balance."
 					},
 					"response": []
 				}
 			]
 		},
 		{
-			"name": "04. Treasury",
+			"name": "04. Treasury Management",
 			"item": [
 				{
 					"name": "Get Treasury Balance",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/treasury/balance",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"treasury",
-								"balance"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "treasury", "balance" ]
 						},
-						"description": "Gets current treasury fund balance for the authenticated user's tenant (Admin role required)."
+						"description": "Gets current Treasury balance for the active tenant (Allowed for Admin, Approver, Reviewer)."
 					},
 					"response": []
 				},
 				{
-					"name": "Deposit Funds (Admin)",
+					"name": "Deposit to Treasury (Admin Only)",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"amount\": 100000.00\n}"
+							"raw": "{\n  \"amount\": 500000.00\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/treasury/deposit",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"treasury",
-								"deposit"
-							]
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "treasury", "deposit" ]
 						},
-						"description": "Deposits funds into tenant treasury balance."
+						"description": "Deposits capital into the tenant's Treasury."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Treasury Transactions",
+					"name": "Get Treasury Transaction Ledger (Admin Only)",
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/treasury/transactions?pageNumber=1&pageSize=10",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"treasury",
-								"transactions"
-							],
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "treasury", "transactions" ],
 							"query": [
-								{
-									"key": "pageNumber",
-									"value": "1"
-								},
-								{
-									"key": "pageSize",
-									"value": "10"
-								}
+								{ "key": "pageNumber", "value": "1" },
+								{ "key": "pageSize", "value": "10" }
 							]
 						},
-						"description": "Retrieves paginated audit log of treasury deposits and fund releases."
+						"description": "Paginated audit ledger of all Treasury transactions (Deposits, FundReleases, Payments)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "05. Multi-Tenancy & Security Verification (QA Edge Cases)",
+			"item": [
+				{
+					"name": "Cross-Tenant Access Test (Expect 404 Not Found)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/99999",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "99999" ]
+						},
+						"description": "Verify multitenant query filters return 404 for application IDs belonging to another tenant."
+					},
+					"response": []
+				},
+				{
+					"name": "Role Violation Test (Expect 403 Forbidden)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/release",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "release" ]
+						},
+						"description": "Verify calling Admin-only endpoints with Applicant/Reviewer bearer token returns 403 Forbidden."
+					},
+					"response": []
+				},
+				{
+					"name": "Unauthenticated Access Test (Expect 401 Unauthorized)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications" ]
+						},
+						"description": "Verify calling protected API endpoints without a Bearer token returns 401 Unauthorized."
 					},
 					"response": []
 				}
