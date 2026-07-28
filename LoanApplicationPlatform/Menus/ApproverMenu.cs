@@ -64,9 +64,10 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
                     Console.WriteLine("\nSelect Status to Apply:");
                     Console.WriteLine("1. Approved");
                     Console.WriteLine("2. Rejected");
+                    Console.WriteLine("3. Returned");
                     Console.Write("Choice: ");
                     var statChoice = Console.ReadLine();
-                    string status = statChoice switch { "1" => "Approved", "2" => "Rejected", _ => "" };
+                    string status = statChoice switch { "1" => "Approved", "2" => "Rejected", "3" => "Returned", _ => "" };
                     
                     Console.Write("Remarks: ");
                     var remarks = Console.ReadLine();
