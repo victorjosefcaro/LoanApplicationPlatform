@@ -2,12 +2,58 @@
 	"info": {
 		"_postman_id": "a8f3b210-91cd-4e89-b827-loanappplatform",
 		"name": "Loan Application Platform API",
-		"description": "Comprehensive Postman Collection for QA testing of Loan Application Platform API, covering Multi-tenancy, RBAC, Server-side Filtering, and the full end-to-end Loan/Payment/Treasury workflows.",
+		"description": "# Loan Application Platform API - QA Testing Collection\n\n## How Token Management Works (Zero Copy-Paste!)\n\n1. **Login as any user** → the token is automatically saved to `{{bearer_token}}` AND cached per-role (e.g. `{{token_t1_applicant}}`)\n2. **All protected requests use `{{bearer_token}}`** → they automatically pick up whichever user you last logged in as\n3. **Switch roles instantly** → use the \"⚡ Switch to [role]\" requests in the Quick Role Switch folder — no need to re-login!\n4. **The active user is tracked** → check `{{active_user}}` to see who you're logged in as\n\n## Recommended E2E Test Flow\n\n1. Hit '🔄 Login All Users (Batch)' to cache all tokens at once\n2. Switch to `t1_admin` → Deposit to Treasury\n3. Switch to `t1_applicant` → Create Loan Application (ID auto-saved)\n4. Switch to `t1_reviewer` → Review Application\n5. Switch to `t1_approver` → Approve Application\n6. Switch to `t1_admin` → Release Loan Funds\n7. Switch to `t1_applicant` → View Payment Schedules → Submit Payment\n8. Switch to `t1_admin` → Post Verified Payment\n\n## Test Assertions\nEvery request includes automated test scripts that validate:\n- Expected HTTP status codes\n- Response body structure\n- Dynamic ID extraction for downstream requests",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearer_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Collection-level pre-request: warn if no token is set for protected endpoints",
+					"const noAuthPaths = ['/api/authentication/login', '/api/authentication/authenticate', '/api/authentication/register'];",
+					"const currentUrl = pm.request.url.toString().toLowerCase();",
+					"const isPublic = noAuthPaths.some(p => currentUrl.includes(p));",
+					"",
+					"if (!isPublic && !pm.environment.get('bearer_token')) {",
+					"    console.warn('⚠️ No bearer_token set! Please login first using one of the Authentication requests.');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Collection-level test: log response time for all requests",
+					"pm.test('Response time is acceptable (< 5s)', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Log active user for debugging",
+					"const activeUser = pm.environment.get('active_user');",
+					"if (activeUser) {",
+					"    console.log('🔑 Active user: ' + activeUser);",
+					"}"
+				]
+			}
+		}
+	],
 	"item": [
 		{
-			"name": "01. Authentication",
+			"name": "01. Authentication & Login",
 			"item": [
 				{
 					"name": "Login (t1_applicant)",
@@ -16,11 +62,17 @@
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test('Login successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
 									"if (pm.response.code === 200) {",
 									"    var token = pm.response.text();",
 									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
-									"    pm.environment.set(\"bearer_token\", token);",
-									"    console.log(\"Saved applicant bearer_token.\");",
+									"    pm.environment.set('bearer_token', token);",
+									"    pm.environment.set('token_t1_applicant', token);",
+									"    pm.environment.set('active_user', 't1_applicant (Applicant, Tenant 1)');",
+									"    console.log('✅ Logged in as t1_applicant. Token saved & cached.');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -28,6 +80,7 @@
 						}
 					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" }
@@ -41,7 +94,7 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "login" ]
 						},
-						"description": "Logs in as Tenant 1 Applicant user."
+						"description": "Logs in as **Tenant 1 Applicant**.\n\nThe token is automatically:\n- Set as the active `bearer_token` (used by all subsequent requests)\n- Cached in `token_t1_applicant` for instant role-switching later"
 					},
 					"response": []
 				},
@@ -52,11 +105,17 @@
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test('Login successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
 									"if (pm.response.code === 200) {",
 									"    var token = pm.response.text();",
 									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
-									"    pm.environment.set(\"bearer_token\", token);",
-									"    console.log(\"Saved reviewer bearer_token.\");",
+									"    pm.environment.set('bearer_token', token);",
+									"    pm.environment.set('token_t1_reviewer', token);",
+									"    pm.environment.set('active_user', 't1_reviewer (Reviewer, Tenant 1)');",
+									"    console.log('✅ Logged in as t1_reviewer. Token saved & cached.');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -64,6 +123,7 @@
 						}
 					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" }
@@ -77,7 +137,7 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "login" ]
 						},
-						"description": "Logs in as Tenant 1 Reviewer user."
+						"description": "Logs in as **Tenant 1 Reviewer**.\n\nToken auto-saved & cached in `token_t1_reviewer`."
 					},
 					"response": []
 				},
@@ -88,11 +148,17 @@
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test('Login successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
 									"if (pm.response.code === 200) {",
 									"    var token = pm.response.text();",
 									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
-									"    pm.environment.set(\"bearer_token\", token);",
-									"    console.log(\"Saved approver bearer_token.\");",
+									"    pm.environment.set('bearer_token', token);",
+									"    pm.environment.set('token_t1_approver', token);",
+									"    pm.environment.set('active_user', 't1_approver (Approver, Tenant 1)');",
+									"    console.log('✅ Logged in as t1_approver. Token saved & cached.');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -100,6 +166,7 @@
 						}
 					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" }
@@ -113,7 +180,7 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "login" ]
 						},
-						"description": "Logs in as Tenant 1 Approver user."
+						"description": "Logs in as **Tenant 1 Approver**.\n\nToken auto-saved & cached in `token_t1_approver`."
 					},
 					"response": []
 				},
@@ -124,11 +191,17 @@
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test('Login successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
 									"if (pm.response.code === 200) {",
 									"    var token = pm.response.text();",
 									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
-									"    pm.environment.set(\"bearer_token\", token);",
-									"    console.log(\"Saved admin bearer_token.\");",
+									"    pm.environment.set('bearer_token', token);",
+									"    pm.environment.set('token_t1_admin', token);",
+									"    pm.environment.set('active_user', 't1_admin (Admin, Tenant 1)');",
+									"    console.log('✅ Logged in as t1_admin. Token saved & cached.');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -136,6 +209,7 @@
 						}
 					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" }
@@ -149,7 +223,7 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "login" ]
 						},
-						"description": "Logs in as Tenant 1 Admin user."
+						"description": "Logs in as **Tenant 1 Admin**.\n\nToken auto-saved & cached in `token_t1_admin`."
 					},
 					"response": []
 				},
@@ -160,11 +234,17 @@
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test('Login successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
 									"if (pm.response.code === 200) {",
 									"    var token = pm.response.text();",
 									"    if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
-									"    pm.environment.set(\"bearer_token\", token);",
-									"    console.log(\"Saved t2_admin bearer_token.\");",
+									"    pm.environment.set('bearer_token', token);",
+									"    pm.environment.set('token_t2_admin', token);",
+									"    pm.environment.set('active_user', 't2_admin (Admin, Tenant 2)');",
+									"    console.log('✅ Logged in as t2_admin. Token saved & cached.');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -172,6 +252,7 @@
 						}
 					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" }
@@ -185,13 +266,61 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "login" ]
 						},
-						"description": "Logs in as Tenant 2 Admin user."
+						"description": "Logs in as **Tenant 2 Admin**.\n\nToken auto-saved & cached in `token_t2_admin`. Useful for cross-tenant isolation testing."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Invalid Credentials - Expect 401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid login returns 401 Unauthorized', function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"nonexistent_user\",\n  \"password\": \"wrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Negative test: verifies invalid credentials return 401."
 					},
 					"response": []
 				},
 				{
 					"name": "Register Applicant (Public)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Registration successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" }
@@ -205,12 +334,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "register" ]
 						},
-						"description": "Public endpoint to register a new applicant."
+						"description": "Public endpoint to register a new applicant. No token required."
 					},
 					"response": []
 				},
 				{
 					"name": "Register User (Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Admin registration successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -229,28 +371,349 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "authentication", "admin", "register" ]
 						},
-						"description": "Admin endpoint to create a user with specified Role (Applicant, Reviewer, Approver, Admin)."
+						"description": "Admin-only endpoint to create a user with a specified Role (Applicant, Reviewer, Approver, Admin).\n\n⚠️ Must be logged in as Admin first."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Login as different users to obtain JWT tokens.\n\n**Tokens are automatically saved** — no manual copy-paste needed!\n\nEach login:\n1. Sets `{{bearer_token}}` (used by ALL other requests automatically)\n2. Caches the token per-role for instant switching later"
 		},
 		{
-			"name": "02. Loan Application Lifecycle (E2E Workflow)",
+			"name": "02. ⚡ Quick Role Switch (No Re-Login!)",
 			"item": [
 				{
-					"name": "1. Applicant - Create Loan Application",
+					"name": "⚡ Switch to t1_applicant",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const cached = pm.environment.get('token_t1_applicant');",
+									"if (!cached) {",
+									"    console.error('❌ No cached token for t1_applicant. Please login as t1_applicant first.');",
+									"    throw new Error('No cached token for t1_applicant. Login first!');",
+									"}",
+									"pm.environment.set('bearer_token', cached);",
+									"pm.environment.set('active_user', 't1_applicant (Applicant, Tenant 1)');",
+									"console.log('⚡ Switched to t1_applicant (from cache)');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Role switch to t1_applicant confirmed', function () {",
+									"    pm.expect(pm.environment.get('active_user')).to.include('t1_applicant');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Instantly switches the active bearer token to **t1_applicant** using the cached token."
+					},
+					"response": []
+				},
+				{
+					"name": "⚡ Switch to t1_reviewer",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const cached = pm.environment.get('token_t1_reviewer');",
+									"if (!cached) {",
+									"    console.error('❌ No cached token for t1_reviewer. Please login as t1_reviewer first.');",
+									"    throw new Error('No cached token for t1_reviewer. Login first!');",
+									"}",
+									"pm.environment.set('bearer_token', cached);",
+									"pm.environment.set('active_user', 't1_reviewer (Reviewer, Tenant 1)');",
+									"console.log('⚡ Switched to t1_reviewer (from cache)');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Role switch to t1_reviewer confirmed', function () {",
+									"    pm.expect(pm.environment.get('active_user')).to.include('t1_reviewer');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Instantly switches the active bearer token to **t1_reviewer** using the cached token."
+					},
+					"response": []
+				},
+				{
+					"name": "⚡ Switch to t1_approver",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const cached = pm.environment.get('token_t1_approver');",
+									"if (!cached) {",
+									"    console.error('❌ No cached token for t1_approver. Please login as t1_approver first.');",
+									"    throw new Error('No cached token for t1_approver. Login first!');",
+									"}",
+									"pm.environment.set('bearer_token', cached);",
+									"pm.environment.set('active_user', 't1_approver (Approver, Tenant 1)');",
+									"console.log('⚡ Switched to t1_approver (from cache)');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Role switch to t1_approver confirmed', function () {",
+									"    pm.expect(pm.environment.get('active_user')).to.include('t1_approver');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Instantly switches the active bearer token to **t1_approver** using the cached token."
+					},
+					"response": []
+				},
+				{
+					"name": "⚡ Switch to t1_admin",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const cached = pm.environment.get('token_t1_admin');",
+									"if (!cached) {",
+									"    console.error('❌ No cached token for t1_admin. Please login as t1_admin first.');",
+									"    throw new Error('No cached token for t1_admin. Login first!');",
+									"}",
+									"pm.environment.set('bearer_token', cached);",
+									"pm.environment.set('active_user', 't1_admin (Admin, Tenant 1)');",
+									"console.log('⚡ Switched to t1_admin (from cache)');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Role switch to t1_admin confirmed', function () {",
+									"    pm.expect(pm.environment.get('active_user')).to.include('t1_admin');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Instantly switches the active bearer token to **t1_admin** using the cached token."
+					},
+					"response": []
+				},
+				{
+					"name": "⚡ Switch to t2_admin",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const cached = pm.environment.get('token_t2_admin');",
+									"if (!cached) {",
+									"    console.error('❌ No cached token for t2_admin. Please login as t2_admin first.');",
+									"    throw new Error('No cached token for t2_admin. Login first!');",
+									"}",
+									"pm.environment.set('bearer_token', cached);",
+									"pm.environment.set('active_user', 't2_admin (Admin, Tenant 2)');",
+									"console.log('⚡ Switched to t2_admin (from cache)');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Role switch to t2_admin confirmed', function () {",
+									"    pm.expect(pm.environment.get('active_user')).to.include('t2_admin');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "Instantly switches the active bearer token to **t2_admin** using the cached token."
+					},
+					"response": []
+				},
+				{
+					"name": "🔄 Login All Users (Batch)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const baseUrl = pm.environment.get('baseUrl');",
+									"const users = [",
+									"    { username: 't1_applicant', varName: 'token_t1_applicant', label: 't1_applicant (Applicant, Tenant 1)' },",
+									"    { username: 't1_reviewer',  varName: 'token_t1_reviewer',  label: 't1_reviewer (Reviewer, Tenant 1)' },",
+									"    { username: 't1_approver',  varName: 'token_t1_approver',  label: 't1_approver (Approver, Tenant 1)' },",
+									"    { username: 't1_admin',     varName: 'token_t1_admin',     label: 't1_admin (Admin, Tenant 1)' },",
+									"    { username: 't2_admin',     varName: 'token_t2_admin',     label: 't2_admin (Admin, Tenant 2)' }",
+									"];",
+									"",
+									"let index = 0;",
+									"function loginNext() {",
+									"    if (index >= users.length) {",
+									"        pm.environment.set('bearer_token', pm.environment.get('token_t1_admin'));",
+									"        pm.environment.set('active_user', 't1_admin (Admin, Tenant 1)');",
+									"        console.log('🔄 All users logged in and cached! Active user set to t1_admin.');",
+									"        return;",
+									"    }",
+									"    const user = users[index];",
+									"    pm.sendRequest({",
+									"        url: baseUrl + '/api/authentication/login',",
+									"        method: 'POST',",
+									"        header: { 'Content-Type': 'application/json' },",
+									"        body: {",
+									"            mode: 'raw',",
+									"            raw: JSON.stringify({ username: user.username, password: 'password123' })",
+									"        }",
+									"    }, function (err, res) {",
+									"        if (!err && res.code === 200) {",
+									"            let token = res.text();",
+									"            if (token.startsWith('\"') && token.endsWith('\"')) { token = JSON.parse(token); }",
+									"            pm.environment.set(user.varName, token);",
+									"            console.log('✅ Cached token for ' + user.username);",
+									"        } else {",
+									"            console.error('❌ Failed to login as ' + user.username + ': ' + (err || res.code));",
+									"        }",
+									"        index++;",
+									"        loginNext();",
+									"    });",
+									"}",
+									"loginNext();"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('All user tokens are cached', function () {",
+									"    pm.expect(pm.environment.get('token_t1_applicant')).to.not.be.empty;",
+									"    pm.expect(pm.environment.get('token_t1_reviewer')).to.not.be.empty;",
+									"    pm.expect(pm.environment.get('token_t1_approver')).to.not.be.empty;",
+									"    pm.expect(pm.environment.get('token_t1_admin')).to.not.be.empty;",
+									"    pm.expect(pm.environment.get('token_t2_admin')).to.not.be.empty;",
+									"});",
+									"",
+									"pm.test('Active user set to t1_admin', function () {",
+									"    pm.expect(pm.environment.get('active_user')).to.include('t1_admin');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/login",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "authentication", "login" ]
+						},
+						"description": "🔥 **One-click setup!** Logs in ALL 5 users in one shot and caches their tokens.\n\nAfter running this, you can use any ⚡ Switch request without needing to login individually.\n\nThe active user is set to `t1_admin` by default."
+					},
+					"response": []
+				}
+			],
+			"description": "⚡ **Instant role switching without re-authentication!**\n\nAfter you've logged in as each user at least once (or use the '🔄 Login All Users' batch request), you can instantly switch between roles."
+		},
+		{
+			"name": "03. Loan Application Lifecycle (E2E Workflow)",
+			"item": [
+				{
+					"name": "1. Applicant → Create Loan Application",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"pm.test('Loan application created (201)', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
 									"    var data = pm.response.json();",
 									"    if (data.id) {",
-									"        pm.environment.set(\"loan_application_id\", data.id.toString());",
-									"        console.log(\"Saved loan_application_id: \" + data.id);",
+									"        pm.environment.set('loan_application_id', data.id.toString());",
+									"        console.log('📋 Auto-saved loan_application_id: ' + data.id);",
 									"    }",
+									"    pm.test('Response contains id', function () {",
+									"        pm.expect(data).to.have.property('id');",
+									"    });",
+									"    pm.test('Status is Submitted', function () {",
+									"        pm.expect(data.status).to.eql('Submitted');",
+									"    });",
 									"}"
 								],
 								"type": "text/javascript"
@@ -275,12 +738,29 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications" ]
 						},
-						"description": "Applicant creates a loan application. Status automatically sets to Submitted."
+						"description": "Creates a new loan application. **Auto-saves** `{{loan_application_id}}`.\n\n⚠️ Must be logged in as Applicant."
 					},
 					"response": []
 				},
 				{
-					"name": "2. Get Loan Applications (Server-side Filter: ?status=Submitted)",
+					"name": "2. Get Loan Applications (Filtered)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get applications successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -293,35 +773,107 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications" ],
 							"query": [
-								{ "key": "status", "value": "Submitted" },
+								{ "key": "status", "value": "Submitted", "description": "Filter: Submitted, Reviewed, Approved, Returned, Rejected, Cancelled, Released" },
 								{ "key": "pageNumber", "value": "1" },
 								{ "key": "pageSize", "value": "10" }
 							]
 						},
-						"description": "Server-side filtered listing of applications by status."
+						"description": "Server-side filtered listing of loan applications."
 					},
 					"response": []
 				},
 				{
-					"name": "3. Applicant - Resubmit Returned Application",
+					"name": "2b. Get Single Loan Application By ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get single application successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    var data = pm.response.json();",
+									"    pm.test('Response contains expected fields', function () {",
+									"        pm.expect(data).to.have.property('id');",
+									"        pm.expect(data).to.have.property('status');",
+									"        pm.expect(data).to.have.property('amount');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
-						"method": "PATCH",
+						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/submit",
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
 							"host": [ "{{baseUrl}}" ],
-							"path": [ "api", "loanapplications", "{{loan_application_id}}", "submit" ]
+							"path": [ "api", "loanapplications", "{{loan_application_id}}" ]
 						},
-						"description": "Resubmits an application that was marked as Returned."
+						"description": "Gets details of a single loan application by ID."
 					},
 					"response": []
 				},
 				{
-					"name": "4. Reviewer - Review Application (Reviewed / Returned / Rejected)",
+					"name": "3. Applicant → Update & Resubmit Returned Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Update & Resubmit successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
+						},
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"applicantName\": \"QA Applicant Updated\",\n  \"amount\": 120000.00,\n  \"termInMonths\": 12,\n  \"monthlyIncome\": 50000.00,\n  \"purpose\": \"Home Renovation\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
+							"host": [ "{{baseUrl}}" ],
+							"path": [ "api", "loanapplications", "{{loan_application_id}}" ]
+						},
+						"description": "Updates fields and resubmits a Returned application in a single request. Sets status back to `Submitted`.\n\n⚠️ Only works if application is currently in `Returned` status."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Reviewer → Review Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Review successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -340,12 +892,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "review" ]
 						},
-						"description": "Reviewer evaluates application. Status can be set to Reviewed, Returned, or Rejected."
+						"description": "Reviewer evaluates the application.\n\nSet `status` to: `Reviewed`, `Returned`, or `Rejected`.\n\n⚠️ Must be logged in as Reviewer."
 					},
 					"response": []
 				},
 				{
-					"name": "5. Approver - Approve Application (Approved / Returned / Rejected)",
+					"name": "5. Approver → Approve Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Approval successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -364,12 +929,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "approve" ]
 						},
-						"description": "Approver evaluates reviewed application. Status can be set to Approved, Returned, or Rejected."
+						"description": "Approver gives final decision.\n\nSet `status` to: `Approved`, `Returned`, or `Rejected`.\n\n⚠️ Must be logged in as Approver."
 					},
 					"response": []
 				},
 				{
-					"name": "6. Admin - Release Loan Funds",
+					"name": "6. Admin → Release Loan Funds",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Fund release successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -382,32 +960,46 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "release" ]
 						},
-						"description": "Admin releases funds for an Approved loan. Validates Treasury balance, deducts funds, logs transaction, and generates PaymentSchedules."
+						"description": "Admin releases funds for an Approved loan.\n\n⚠️ Must be logged in as Admin. Ensure Treasury has been funded first!"
 					},
 					"response": []
 				},
 				{
-					"name": "7. Applicant - Cancel Application",
+					"name": "7. Applicant → Cancel Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cancellation successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
 						},
-						"method": "DELETE",
+						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/cancel",
 							"host": [ "{{baseUrl}}" ],
-							"path": [ "api", "loanapplications", "{{loan_application_id}}" ]
+							"path": [ "api", "loanapplications", "{{loan_application_id}}", "cancel" ]
 						},
-						"description": "Applicant cancels their loan application (only allowed in Submitted or Returned status)."
+						"description": "Applicant cancels their application. ⚠️ Only allowed in `Submitted` or `Returned` status."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "End-to-end loan application workflow.\n\n**Recommended flow:** Create → Review → Approve → Release\n\n💡 Use ⚡ Quick Role Switch to change users between steps!"
 		},
 		{
-			"name": "03. Payment & Amortization Workflow",
+			"name": "04. Payment & Amortization Workflow",
 			"item": [
 				{
 					"name": "1. Get Payment Schedules",
@@ -416,11 +1008,18 @@
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test('Get payment schedules successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
 									"if (pm.response.code === 200) {",
 									"    var list = pm.response.json();",
+									"    pm.test('Response is an array', function () {",
+									"        pm.expect(list).to.be.an('array');",
+									"    });",
 									"    if (list && list.length > 0) {",
-									"        pm.environment.set(\"schedule_id\", list[0].id.toString());",
-									"        console.log(\"Saved schedule_id: \" + list[0].id);",
+									"        pm.environment.set('schedule_id', list[0].id.toString());",
+									"        console.log('📋 Auto-saved schedule_id: ' + list[0].id);",
 									"    }",
 									"}"
 								],
@@ -440,12 +1039,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "payments" ]
 						},
-						"description": "Fetches payment amortization schedule for a released loan."
+						"description": "Fetches the payment amortization schedule. **Auto-saves** `{{schedule_id}}`."
 					},
 					"response": []
 				},
 				{
-					"name": "2. Applicant - Submit Payment",
+					"name": "2. Applicant → Submit Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Payment submission successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -464,12 +1076,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "payments", "{{schedule_id}}", "submit" ]
 						},
-						"description": "Applicant notifies payment sent, providing the submitted payment amount."
+						"description": "Applicant notifies payment sent. ⚠️ Must be logged in as Applicant."
 					},
 					"response": []
 				},
 				{
-					"name": "3. Admin - Post Verified Payment",
+					"name": "3. Admin → Post Verified Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Payment posting successful (204 No Content)', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -488,17 +1113,31 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "payments", "{{schedule_id}}", "post" ]
 						},
-						"description": "Admin posts verified payment to Treasury. Marks schedule as Paid or PartiallyPaid and credits Treasury balance."
+						"description": "Admin posts verified payment to Treasury. ⚠️ Must be logged in as Admin."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Payment workflow for released loans.\n\n**Flow:** Get Schedules → Applicant Submits Payment → Admin Posts Verified Payment"
 		},
 		{
-			"name": "04. Treasury Management",
+			"name": "05. Treasury Management",
 			"item": [
 				{
 					"name": "Get Treasury Balance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get balance successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -511,12 +1150,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "treasury", "balance" ]
 						},
-						"description": "Gets current Treasury balance for the active tenant (Allowed for Admin, Approver, Reviewer)."
+						"description": "Gets current Treasury balance. Allowed roles: Admin, Approver, Reviewer."
 					},
 					"response": []
 				},
 				{
 					"name": "Deposit to Treasury (Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Deposit successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -535,12 +1187,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "treasury", "deposit" ]
 						},
-						"description": "Deposits capital into the tenant's Treasury."
+						"description": "Deposits capital into Treasury. ⚠️ Admin only. Run this before releasing loan funds!"
 					},
 					"response": []
 				},
 				{
 					"name": "Get Treasury Transaction Ledger (Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get transactions successful (200)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -557,17 +1222,36 @@
 								{ "key": "pageSize", "value": "10" }
 							]
 						},
-						"description": "Paginated audit ledger of all Treasury transactions (Deposits, FundReleases, Payments)."
+						"description": "Paginated audit ledger of all Treasury transactions. ⚠️ Admin only."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Treasury management endpoints for deposits, balance checks, and transaction history."
 		},
 		{
-			"name": "05. Multi-Tenancy & Security Verification (QA Edge Cases)",
+			"name": "06. Multi-Tenancy & Security Verification (QA Edge Cases)",
 			"item": [
 				{
-					"name": "Cross-Tenant Access Test (Expect 404 Not Found)",
+					"name": "Cross-Tenant Access Test (Expect 404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cross-tenant access returns 404 Not Found', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test('No data leaked from other tenant', function () {",
+									"    const body = pm.response.text();",
+									"    pm.expect(body).to.not.include('applicantName');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -580,12 +1264,25 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "99999" ]
 						},
-						"description": "Verify multitenant query filters return 404 for application IDs belonging to another tenant."
+						"description": "Verify multi-tenant isolation returns 404 for other tenant's data."
 					},
 					"response": []
 				},
 				{
-					"name": "Role Violation Test (Expect 403 Forbidden)",
+					"name": "Role Violation Test (Expect 403)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Role violation returns 403 Forbidden', function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -598,13 +1295,27 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications", "{{loan_application_id}}", "release" ]
 						},
-						"description": "Verify calling Admin-only endpoints with Applicant/Reviewer bearer token returns 403 Forbidden."
+						"description": "Verify calling Admin-only endpoints with non-Admin token returns 403.\n\n💡 Login as t1_applicant or t1_reviewer first, then try to release funds."
 					},
 					"response": []
 				},
 				{
-					"name": "Unauthenticated Access Test (Expect 401 Unauthorized)",
+					"name": "Unauthenticated Access Test (Expect 401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Unauthenticated access returns 401 Unauthorized', function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
+						"auth": { "type": "noauth" },
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -612,11 +1323,12 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "loanapplications" ]
 						},
-						"description": "Verify calling protected API endpoints without a Bearer token returns 401 Unauthorized."
+						"description": "Verify calling protected endpoints WITHOUT a token returns 401. Auth is explicitly disabled on this request."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Security edge case tests. These intentionally test failure scenarios — expected results are error codes (401, 403, 404)."
 		}
 	]
 }
