@@ -1,0 +1,714 @@
+{
+	"info": {
+		"_postman_id": "a8f3b210-91cd-4e89-b827-loanappplatform",
+		"name": "Loan Application Platform API",
+		"description": "Postman Collection for QA testing of Loan Application Platform API, including Multi-tenancy, Role-based Access Control (Applicant, Reviewer, Approver, Admin), and full Loan/Payment/Treasury workflows.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01. Authentication",
+			"item": [
+				{
+					"name": "Authenticate (Login)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var token = pm.response.text();",
+									"    if (token.startsWith('\"') && token.endsWith('\"')) {",
+									"        token = JSON.parse(token);",
+									"    }",
+									"    pm.environment.set(\"bearer_token\", token);",
+									"    console.log(\"Saved bearer_token to environment.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/authenticate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authentication",
+								"authenticate"
+							]
+						},
+						"description": "Authenticates a user and automatically sets `bearer_token` in the active environment."
+					},
+					"response": []
+				},
+				{
+					"name": "Register Applicant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"applicant_qa\",\n  \"password\": \"Password123!\",\n  \"tenantId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authentication",
+								"register"
+							]
+						},
+						"description": "Public endpoint to register a new user with the Applicant role."
+					},
+					"response": []
+				},
+				{
+					"name": "Register User (Admin Only)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"reviewer_qa\",\n  \"password\": \"Password123!\",\n  \"role\": \"Reviewer\",\n  \"tenantId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authentication/admin/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authentication",
+								"admin",
+								"register"
+							]
+						},
+						"description": "Admin endpoint to register users with custom roles (Reviewer, Approver, Admin, Applicant)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02. Loan Applications",
+			"item": [
+				{
+					"name": "Get All Applications",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications?pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieves paginated loan applications filtered by user role and tenant. Returns `X-Pagination` header."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Application (Applicant)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var data = pm.response.json();",
+									"    if (data && data.id) {",
+									"        pm.environment.set(\"loan_application_id\", data.id);",
+									"        console.log(\"Saved loan_application_id:\", data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"applicantName\": \"Jane Doe\",\n  \"amount\": 50000.00,\n  \"termInMonths\": 12,\n  \"monthlyIncome\": 8500.00,\n  \"purpose\": \"Small Business Expansion\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications"
+							]
+						},
+						"description": "Creates a new draft loan application. Automatically sets `loan_application_id` in environment upon success."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Application By ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}"
+							]
+						},
+						"description": "Fetches a specific loan application by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application (Draft)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"applicantName\": \"Jane Doe Updated\",\n  \"amount\": 60000.00,\n  \"termInMonths\": 24,\n  \"monthlyIncome\": 9000.00,\n  \"purpose\": \"Equipment Purchase and Expansion\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}"
+							]
+						},
+						"description": "Updates a draft loan application before submission."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Application",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/submit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"submit"
+							]
+						},
+						"description": "Submits a Draft or Returned application for review. Status changes to Submitted."
+					},
+					"response": []
+				},
+				{
+					"name": "Review Application (Reviewer)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"Reviewed\",\n  \"remarks\": \"Financial income verified and background check clear.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/review",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"review"
+							]
+						},
+						"description": "Reviewer endpoint to mark application as Reviewed, Returned, or Rejected."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Application (Approver)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"Approved\",\n  \"remarks\": \"Loan terms approved for disbursement.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/approve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"approve"
+							]
+						},
+						"description": "Approver endpoint to approve or reject a reviewed application."
+					},
+					"response": []
+				},
+				{
+					"name": "Release Funds (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/release",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"release"
+							]
+						},
+						"description": "Admin endpoint to release funds. Generates payment schedules and deducts from Treasury."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Application (Applicant)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"cancel"
+							]
+						},
+						"description": "Allows Applicant to cancel a Draft application."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "03. Payments",
+			"item": [
+				{
+					"name": "Get Payment Schedules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var list = pm.response.json();",
+									"    if (list && list.length > 0) {",
+									"        pm.environment.set(\"schedule_id\", list[0].id);",
+									"        console.log(\"Saved schedule_id:\", list[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"payments"
+							]
+						},
+						"description": "Fetches amortization/payment schedule items for a released loan."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Payment (Applicant)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments/{{schedule_id}}/submit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"payments",
+								"{{schedule_id}}",
+								"submit"
+							]
+						},
+						"description": "Applicant submits proof/intent of payment for a schedule item."
+					},
+					"response": []
+				},
+				{
+					"name": "Post Payment (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 5000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loanapplications/{{loan_application_id}}/payments/{{schedule_id}}/post",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loanapplications",
+								"{{loan_application_id}}",
+								"payments",
+								"{{schedule_id}}",
+								"post"
+							]
+						},
+						"description": "Admin posts and confirms payment for a schedule item, updating Treasury."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "04. Treasury",
+			"item": [
+				{
+					"name": "Get Treasury Balance",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/treasury/balance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"treasury",
+								"balance"
+							]
+						},
+						"description": "Gets current treasury fund balance for the authenticated user's tenant (Admin role required)."
+					},
+					"response": []
+				},
+				{
+					"name": "Deposit Funds (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/treasury/deposit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"treasury",
+								"deposit"
+							]
+						},
+						"description": "Deposits funds into tenant treasury balance."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Treasury Transactions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/treasury/transactions?pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"treasury",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieves paginated audit log of treasury deposits and fund releases."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
