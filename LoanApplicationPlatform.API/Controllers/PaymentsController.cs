@@ -35,12 +35,12 @@ namespace LoanApplicationPlatform.API.Controllers
 
         [HttpPost("{scheduleId}/submit")]
         [Authorize(Roles = "Applicant")]
-        public async Task<ActionResult> SubmitPayment(int loanApplicationId, int scheduleId)
+        public async Task<ActionResult> SubmitPayment(int loanApplicationId, int scheduleId, [FromBody] PaymentDto? paymentDto = null)
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userIdStr == null) return Unauthorized();
 
-            var (success, errorMessage, notFound, forbid) = await _paymentService.SubmitPaymentAsync(loanApplicationId, scheduleId, int.Parse(userIdStr));
+            var (success, errorMessage, notFound, forbid) = await _paymentService.SubmitPaymentAsync(loanApplicationId, scheduleId, int.Parse(userIdStr), paymentDto?.Amount);
             if (notFound) return NotFound(errorMessage);
             if (forbid) return Forbid();
             if (!success) return BadRequest(errorMessage);

@@ -134,9 +134,9 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
             return null;
         }
 
-        public async Task<bool> SubmitPaymentAsync(int loanApplicationId, int scheduleId)
+        public async Task<bool> SubmitPaymentAsync(int loanApplicationId, int scheduleId, decimal? amount = null)
         {
-            var response = await _httpClient.PostAsync($"/api/loanapplications/{loanApplicationId}/payments/{scheduleId}/submit", null);
+            var response = await _httpClient.PostAsJsonAsync($"/api/loanapplications/{loanApplicationId}/payments/{scheduleId}/submit", new { Amount = amount });
             return response.IsSuccessStatusCode;
         }
 
@@ -198,7 +198,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
 
     public record TreasuryTransactionDto(int Id, DateTime TransactionDate, decimal Amount, string Type, int? ReferenceId);
     public record ApplicationDto(int Id, decimal Amount, int TermInMonths, string Status, string Remarks, DateTime CreatedAt);
-    public record PaymentScheduleDto(int Id, DateTime DueDate, decimal AmountDue, decimal AmountPaid, string Status);
+    public record PaymentScheduleDto(int Id, DateTime DueDate, decimal AmountDue, decimal AmountPaid, decimal? SubmittedAmount, string Status);
     
     public record PaginationMetadata(int totalCount, int pageSize, int currentPage, int totalPages, bool hasPrevious, bool hasNext);
     public record PagedResponse<T>(IEnumerable<T> Items, PaginationMetadata? Metadata);

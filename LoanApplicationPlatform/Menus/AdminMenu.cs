@@ -154,18 +154,33 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             if (!int.TryParse(Console.ReadLine(), out var pLoanId)) { ConsoleHelper.PrintError("Invalid ID."); return; }
             
             var pSch = await apiClient.GetPaymentSchedulesAsync(pLoanId);
-            var submittedSchs = pSch?.Where(s => s.Status == "Payment Submitted" || s.Status == "Partially Paid").ToList();
+            var submittedSchs = pSch?.Where(s => s.Status == "PaymentSubmitted" || s.Status == "Payment Submitted" || s.Status == "PartiallyPaid" || s.Status == "Partially Paid").ToList();
             if (submittedSchs == null || !submittedSchs.Any()) { ConsoleHelper.PrintError("No submitted payments for this application."); return; }
             
             Console.WriteLine("\nSubmitted Schedules:");
             foreach (var s in submittedSchs)
-                Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, AmountDue: {s.AmountDue:C}, AmountPaid: {s.AmountPaid:C}, Status: {s.Status}");
+            {
+                var claimedStr = s.SubmittedAmount.HasValue ? s.SubmittedAmount.Value.ToString("C") : "N/A";
+                Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, AmountDue: {s.AmountDue:C}, AmountPaid: {s.AmountPaid:C}, Applicant Claimed: {claimedStr}, Status: {s.Status}");
+            }
                 
             Console.Write("\nEnter Schedule ID to post: ");
             if (!int.TryParse(Console.ReadLine(), out var pSchId)) { ConsoleHelper.PrintError("Invalid Schedule ID."); return; }
-            Console.Write("Enter Verified Payment Amount: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var verifiedAmt)) { ConsoleHelper.PrintError("Invalid amount."); return; }
             
+            var targetSch = submittedSchs.FirstOrDefault(s => s.Id == pSchId);
+            var defaultAmt = targetSch?.SubmittedAmount ?? (targetSch != null ? (targetSch.AmountDue - targetSch.AmountPaid) : 0m);
+            Console.Write($"Enter Verified Payment Amount [default {defaultAmt:C}]: ");
+            var verifiedAmtInput = Console.ReadLine()?.Trim();
+            decimal verifiedAmt;
+            if (string.IsNullOrEmpty(verifiedAmtInput))
+            {
+                verifiedAmt = defaultAmt;
+            }
+            else
+            {
+                if (!decimal.TryParse(verifiedAmtInput, out verifiedAmt) || verifiedAmt <= 0) { ConsoleHelper.PrintError("Invalid amount."); return; }
+            }
+
             var postSuccess = await apiClient.PostPaymentAsync(pLoanId, pSchId, verifiedAmt);
             if (postSuccess) ConsoleHelper.PrintSuccess("Payment posted to treasury successfully!");
             else ConsoleHelper.PrintError("Failed to post payment.");

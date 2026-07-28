@@ -7,6 +7,7 @@ namespace LoanApplicationPlatform.API.Models
         public DateTime DueDate { get; set; }
         public decimal AmountDue { get; set; }
         public decimal AmountPaid { get; set; }
+        public decimal? SubmittedAmount { get; set; }
         public string Status { get; set; } = string.Empty;
     }
 }

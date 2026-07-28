@@ -178,15 +178,29 @@ namespace LoanApplicationPlatform.ConsoleApp.Menus
             if (!int.TryParse(Console.ReadLine(), out var loanId)) { ConsoleHelper.PrintError("Invalid ID."); return; }
             
             var sch = await apiClient.GetPaymentSchedulesAsync(loanId);
-            if (sch == null || !sch.Any(s => s.Status != "Paid" && s.Status != "Payment Submitted")) { ConsoleHelper.PrintError("No pending schedules to pay."); return; }
+            if (sch == null || !sch.Any(s => s.Status != "Paid" && s.Status != "PaymentSubmitted" && s.Status != "Payment Submitted")) { ConsoleHelper.PrintError("No pending schedules to pay."); return; }
             Console.WriteLine("\nPending Schedules:");
-            foreach (var s in sch.Where(s => s.Status != "Paid" && s.Status != "Payment Submitted")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
+            foreach (var s in sch.Where(s => s.Status != "Paid" && s.Status != "PaymentSubmitted" && s.Status != "Payment Submitted")) Console.WriteLine($"- SchID: {s.Id}, Due: {s.DueDate:yyyy-MM-dd}, Amount: {s.AmountDue:C}");
             
             Console.Write("\nEnter Schedule ID to notify payment sent: ");
             if (!int.TryParse(Console.ReadLine(), out var schId)) { ConsoleHelper.PrintError("Invalid Schedule ID."); return; }
             
-            var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId);
-            if (paySuccess) ConsoleHelper.PrintSuccess("Payment notified successfully! Waiting for Admin to post.");
+            var targetSch = sch.FirstOrDefault(s => s.Id == schId);
+            var remainingDue = targetSch != null ? (targetSch.AmountDue - targetSch.AmountPaid) : 0m;
+            Console.Write($"Enter Payment Amount to submit [default {remainingDue:C}]: ");
+            var amtInput = Console.ReadLine()?.Trim();
+            decimal payAmount;
+            if (string.IsNullOrEmpty(amtInput))
+            {
+                payAmount = remainingDue;
+            }
+            else
+            {
+                if (!decimal.TryParse(amtInput, out payAmount) || payAmount <= 0) { ConsoleHelper.PrintError("Invalid payment amount."); return; }
+            }
+
+            var paySuccess = await apiClient.SubmitPaymentAsync(loanId, schId, payAmount);
+            if (paySuccess) ConsoleHelper.PrintSuccess($"Payment notification for {payAmount:C} submitted successfully! Waiting for Admin to post.");
             else ConsoleHelper.PrintError("Payment notification failed.");
         }
 

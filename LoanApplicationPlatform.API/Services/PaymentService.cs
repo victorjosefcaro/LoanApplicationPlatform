@@ -36,7 +36,7 @@ namespace LoanApplicationPlatform.API.Services
             return (_mapper.Map<IEnumerable<PaymentScheduleDto>>(schedules), null, false, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> SubmitPaymentAsync(int loanApplicationId, int scheduleId, int userId)
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> SubmitPaymentAsync(int loanApplicationId, int scheduleId, int userId, decimal? amount = null)
         {
             var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
             if (application == null) return (false, "Application not found.", true, false);
@@ -50,6 +50,7 @@ namespace LoanApplicationPlatform.API.Services
 
             if (scheduleToPay.Status == PaymentStatus.Paid) return (false, "This schedule is already paid.", false, false);
 
+            scheduleToPay.SubmittedAmount = amount ?? (scheduleToPay.AmountDue - scheduleToPay.AmountPaid);
             scheduleToPay.Status = PaymentStatus.PaymentSubmitted;
 
             await _loanRepository.SaveChangesAsync();
