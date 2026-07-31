@@ -88,17 +88,16 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Can only update and resubmit applications in Returned status.", false, false);
             }
 
-            _mapper.Map(dto, application);
-
-            if (application.TermInMonths > 0)
+            if (dto.TermInMonths > 0)
             {
-                decimal estimatedMonthlyPayment = application.Amount / application.TermInMonths;
-                if (estimatedMonthlyPayment > application.MonthlyIncome)
+                decimal estimatedMonthlyPayment = dto.Amount / dto.TermInMonths;
+                if (estimatedMonthlyPayment > dto.MonthlyIncome)
                 {
-                    return (false, $"Resubmission rejected: Your monthly income ({application.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.", false, false);
+                    return (false, $"Resubmission rejected: Your monthly income ({dto.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.", false, false);
                 }
             }
 
+            _mapper.Map(dto, application);
             application.Status = LoanStatus.Submitted;
             await _loanRepository.SaveChangesAsync();
 
@@ -133,7 +132,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Can only review submitted applications.", false);
             }
 
-            application.Status = Enum.Parse<LoanStatus>(reviewDto.Status);
+            if (!Enum.TryParse<LoanStatus>(reviewDto.Status, out var reviewStatus))
+            {
+                return (false, "Invalid review status.", false);
+            }
+
+            application.Status = reviewStatus;
             application.Remarks = reviewDto.Remarks;
 
             await _loanRepository.SaveChangesAsync();
@@ -150,7 +154,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Can only process applications that have been reviewed.", false);
             }
 
-            application.Status = Enum.Parse<LoanStatus>(approveDto.Status);
+            if (!Enum.TryParse<LoanStatus>(approveDto.Status, out var approvalStatus))
+            {
+                return (false, "Invalid approval status.", false);
+            }
+
+            application.Status = approvalStatus;
             application.Remarks = approveDto.Remarks;
 
             await _loanRepository.SaveChangesAsync();
