@@ -1,6 +1,17 @@
 @LoanApplicationPlatform.API_HostAddress = http://localhost:5131
 
-GET {{LoanApplicationPlatform.API_HostAddress}}/weatherforecast/
+POST {{LoanApplicationPlatform.API_HostAddress}}/api/authentication/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "t1_admin",
+  "password": "password123"
+}
+
+###
+
+GET {{LoanApplicationPlatform.API_HostAddress}}/api/treasury/balance
 Accept: application/json
 
 ###
