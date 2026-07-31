@@ -76,9 +76,41 @@ namespace LoanApplicationPlatform.API.Services
             application.CreatedAt = DateTime.UtcNow;
 
             _loanRepository.AddLoanApplication(application);
+            AddStatusHistory(application, null, LoanStatus.Submitted, null, userId);
             await _loanRepository.SaveChangesAsync();
 
             return (_mapper.Map<LoanApplicationDto>(application), null);
+        }
+
+        public async Task<(IEnumerable<LoanApplicationStatusHistoryDto>? History, bool NotFound, bool Forbid)> GetStatusHistoryAsync(int id, int userId, string role)
+        {
+            var application = await _loanRepository.GetLoanApplicationAsync(id);
+            if (application == null) return (null, true, false);
+
+            if (role == "Applicant" && application.ApplicantId != userId)
+            {
+                return (null, false, true);
+            }
+
+            var history = await _context.LoanApplicationStatusHistories
+                .AsNoTracking()
+                .Include(h => h.ChangedByUser)
+                .Where(h => h.LoanApplicationId == id)
+                .OrderByDescending(h => h.ChangedAt)
+                .Select(h => new LoanApplicationStatusHistoryDto
+                {
+                    Id = h.Id,
+                    LoanApplicationId = h.LoanApplicationId,
+                    PreviousStatus = h.PreviousStatus.HasValue ? h.PreviousStatus.Value.ToString() : null,
+                    NewStatus = h.NewStatus.ToString(),
+                    Remarks = h.Remarks,
+                    ChangedByUserId = h.ChangedByUserId,
+                    ChangedByUsername = h.ChangedByUser != null ? h.ChangedByUser.Username : null,
+                    ChangedAt = h.ChangedAt
+                })
+                .ToListAsync();
+
+            return (history, false, false);
         }
 
         public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> UpdateApplicationAsync(int id, int userId, LoanApplicationForUpdateDto dto)
@@ -102,7 +134,9 @@ namespace LoanApplicationPlatform.API.Services
                 }
             }
 
+            var previousStatus = application.Status;
             _mapper.Map(dto, application);
+            AddStatusHistory(application, previousStatus, LoanStatus.Submitted, null, userId);
             application.Status = LoanStatus.Submitted;
             await _loanRepository.SaveChangesAsync();
 
@@ -121,13 +155,14 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Application cannot be cancelled at this stage.", false, false);
             }
 
+            AddStatusHistory(application, application.Status, LoanStatus.Cancelled, null, userId);
             application.Status = LoanStatus.Cancelled;
             await _loanRepository.SaveChangesAsync();
 
             return (true, null, false, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReviewApplicationAsync(int id, ReviewDto reviewDto)
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReviewApplicationAsync(int id, int changedByUserId, ReviewDto reviewDto)
         {
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return (false, "Application not found.", true);
@@ -142,6 +177,7 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Invalid review status.", false);
             }
 
+            AddStatusHistory(application, application.Status, reviewStatus, reviewDto.Remarks, changedByUserId);
             application.Status = reviewStatus;
             application.Remarks = reviewDto.Remarks;
 
@@ -149,7 +185,7 @@ namespace LoanApplicationPlatform.API.Services
             return (true, null, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ApproveApplicationAsync(int id, ApproveDto approveDto)
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ApproveApplicationAsync(int id, int changedByUserId, ApproveDto approveDto)
         {
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return (false, "Application not found.", true);
@@ -164,6 +200,7 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Invalid approval status.", false);
             }
 
+            AddStatusHistory(application, application.Status, approvalStatus, approveDto.Remarks, changedByUserId);
             application.Status = approvalStatus;
             application.Remarks = approveDto.Remarks;
 
@@ -171,7 +208,7 @@ namespace LoanApplicationPlatform.API.Services
             return (true, null, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReleaseFundsAsync(int id)
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReleaseFundsAsync(int id, int changedByUserId)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
             await _context.Database.ExecuteSqlRawAsync(
@@ -216,11 +253,32 @@ namespace LoanApplicationPlatform.API.Services
                 });
             }
 
+            AddStatusHistory(application, application.Status, LoanStatus.Released, application.Remarks, changedByUserId);
             application.Status = LoanStatus.Released;
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return (true, null, false);
+        }
+
+        private void AddStatusHistory(
+            LoanApplication application,
+            LoanStatus? previousStatus,
+            LoanStatus newStatus,
+            string? remarks,
+            int changedByUserId)
+        {
+            _context.LoanApplicationStatusHistories.Add(new LoanApplicationStatusHistory
+            {
+                LoanApplicationId = application.Id,
+                LoanApplication = application,
+                PreviousStatus = previousStatus,
+                NewStatus = newStatus,
+                Remarks = remarks,
+                ChangedByUserId = changedByUserId,
+                ChangedAt = DateTime.UtcNow,
+                TenantId = application.TenantId
+            });
         }
     }
 }

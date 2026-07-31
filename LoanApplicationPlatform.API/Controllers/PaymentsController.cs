@@ -52,7 +52,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> PostPayment(int loanApplicationId, int scheduleId, [FromBody] PaymentDto paymentDto)
         {
-            var (success, errorMessage, notFound) = await _paymentService.PostPaymentAsync(loanApplicationId, scheduleId, paymentDto);
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdStr == null) return Unauthorized();
+
+            var (success, errorMessage, notFound) = await _paymentService.PostPaymentAsync(loanApplicationId, scheduleId, int.Parse(userIdStr), paymentDto);
             if (notFound) return NotFound(errorMessage);
             if (!success) return BadRequest(errorMessage);
 

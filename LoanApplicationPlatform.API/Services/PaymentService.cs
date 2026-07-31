@@ -69,7 +69,7 @@ namespace LoanApplicationPlatform.API.Services
             return (true, null, false, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> PostPaymentAsync(int loanApplicationId, int scheduleId, PaymentDto paymentDto)
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound)> PostPaymentAsync(int loanApplicationId, int scheduleId, int changedByUserId, PaymentDto paymentDto)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
             await _context.Database.ExecuteSqlRawAsync(
@@ -129,6 +129,17 @@ namespace LoanApplicationPlatform.API.Services
                 var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
                 if (application != null)
                 {
+                    _context.LoanApplicationStatusHistories.Add(new LoanApplicationStatusHistory
+                    {
+                        LoanApplicationId = application.Id,
+                        LoanApplication = application,
+                        PreviousStatus = application.Status,
+                        NewStatus = LoanStatus.Completed,
+                        Remarks = "All payment schedules have been paid.",
+                        ChangedByUserId = changedByUserId,
+                        ChangedAt = DateTime.UtcNow,
+                        TenantId = application.TenantId
+                    });
                     application.Status = LoanStatus.Completed;
                 }
             }

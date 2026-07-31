@@ -15,6 +15,7 @@ namespace LoanApplicationPlatform.API.DbContexts
         public DbSet<PaymentSchedule> PaymentSchedules { get; set; } = null!;
         public DbSet<Treasury> Treasury { get; set; } = null!;
         public DbSet<TreasuryTransaction> TreasuryTransactions { get; set; } = null!;
+        public DbSet<LoanApplicationStatusHistory> LoanApplicationStatusHistories { get; set; } = null!;
 
         public LoanApplicationPlatformContext(
             DbContextOptions<LoanApplicationPlatformContext> options,
@@ -68,6 +69,34 @@ namespace LoanApplicationPlatform.API.DbContexts
                 .Property(p => p.Status)
                 .HasConversion<string>()
                 .HasMaxLength(50);
+
+            modelBuilder.Entity<LoanApplicationStatusHistory>(entity =>
+            {
+                entity.Property(h => h.PreviousStatus)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(h => h.NewStatus)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(h => h.Remarks).HasMaxLength(500);
+
+                entity.HasOne(h => h.LoanApplication)
+                    .WithMany()
+                    .HasForeignKey(h => h.LoanApplicationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(h => h.ChangedByUser)
+                    .WithMany()
+                    .HasForeignKey(h => h.ChangedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(h => h.Tenant)
+                    .WithMany()
+                    .HasForeignKey(h => h.TenantId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Prevent multiple cascade paths to the same table (SQL Server limitation).
             // TenantId FKs use Restrict since tenant deletion is an administrative action
@@ -123,6 +152,9 @@ namespace LoanApplicationPlatform.API.DbContexts
 
             modelBuilder.Entity<TreasuryTransaction>()
                 .HasQueryFilter(t => t.TenantId == _tenantService.GetCurrentTenantId());
+
+            modelBuilder.Entity<LoanApplicationStatusHistory>()
+                .HasQueryFilter(h => h.TenantId == _tenantService.GetCurrentTenantId());
 
             // Seed Tenants
             modelBuilder.Entity<Tenant>().HasData(

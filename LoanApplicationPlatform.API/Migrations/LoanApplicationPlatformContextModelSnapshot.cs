@@ -82,6 +82,50 @@ namespace LoanApplicationPlatform.API.Migrations
                     b.ToTable("LoanApplications");
                 });
 
+            modelBuilder.Entity("LoanApplicationPlatform.API.Entities.LoanApplicationStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ChangedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LoanApplicationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedByUserId");
+
+                    b.HasIndex("LoanApplicationId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("LoanApplicationStatusHistories");
+                });
+
             modelBuilder.Entity("LoanApplicationPlatform.API.Entities.PaymentSchedule", b =>
                 {
                     b.Property<int>("Id")
@@ -334,6 +378,33 @@ namespace LoanApplicationPlatform.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Applicant");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("LoanApplicationPlatform.API.Entities.LoanApplicationStatusHistory", b =>
+                {
+                    b.HasOne("LoanApplicationPlatform.API.Entities.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LoanApplicationPlatform.API.Entities.LoanApplication", "LoanApplication")
+                        .WithMany()
+                        .HasForeignKey("LoanApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LoanApplicationPlatform.API.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChangedByUser");
+
+                    b.Navigation("LoanApplication");
 
                     b.Navigation("Tenant");
                 });

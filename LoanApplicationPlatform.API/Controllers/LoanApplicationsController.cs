@@ -59,6 +59,20 @@ namespace LoanApplicationPlatform.API.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("{id}/history")]
+        public async Task<ActionResult<IEnumerable<LoanApplicationStatusHistoryDto>>> GetStatusHistory(int id)
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userIdStr == null || role == null) return Unauthorized();
+
+            var (history, notFound, forbid) = await _loanApplicationService.GetStatusHistoryAsync(id, int.Parse(userIdStr), role);
+            if (notFound) return NotFound();
+            if (forbid) return Forbid();
+
+            return Ok(history);
+        }
+
         [HttpPost]
         [Authorize(Roles = "Applicant")]
         public async Task<ActionResult<LoanApplicationDto>> CreateApplication([FromBody] LoanApplicationForCreationDto applicationDto)
@@ -109,7 +123,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Policy = "RequireReviewerRole")]
         public async Task<ActionResult> ReviewApplication(int id, [FromBody] ReviewDto reviewDto)
         {
-            var (success, errorMessage, notFound) = await _loanApplicationService.ReviewApplicationAsync(id, reviewDto);
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdStr == null) return Unauthorized();
+
+            var (success, errorMessage, notFound) = await _loanApplicationService.ReviewApplicationAsync(id, int.Parse(userIdStr), reviewDto);
             if (notFound) return NotFound();
             if (!success) return BadRequest(errorMessage);
 
@@ -120,7 +137,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Policy = "RequireApproverRole")]
         public async Task<ActionResult> ApproveApplication(int id, [FromBody] ApproveDto approveDto)
         {
-            var (success, errorMessage, notFound) = await _loanApplicationService.ApproveApplicationAsync(id, approveDto);
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdStr == null) return Unauthorized();
+
+            var (success, errorMessage, notFound) = await _loanApplicationService.ApproveApplicationAsync(id, int.Parse(userIdStr), approveDto);
             if (notFound) return NotFound();
             if (!success) return BadRequest(errorMessage);
 
@@ -131,7 +151,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> ReleaseFunds(int id)
         {
-            var (success, errorMessage, notFound) = await _loanApplicationService.ReleaseFundsAsync(id);
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdStr == null) return Unauthorized();
+
+            var (success, errorMessage, notFound) = await _loanApplicationService.ReleaseFundsAsync(id, int.Parse(userIdStr));
             if (notFound) return NotFound();
             if (!success) return BadRequest(errorMessage);
 
