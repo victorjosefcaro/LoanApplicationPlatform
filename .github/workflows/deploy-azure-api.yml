@@ -34,6 +34,9 @@ jobs:
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Generate idempotent SQL migration script
+        env:
+          # EF needs a valid provider configuration to build the model, but it does not connect here.
+          ConnectionStrings__DefaultConnection: "Server=localhost;Database=LoanApplicationPlatformMigration;User Id=sa;Password=NotARealPassword!123;TrustServerCertificate=True;"
         run: |
           mkdir -p artifacts
           dotnet ef migrations script \
