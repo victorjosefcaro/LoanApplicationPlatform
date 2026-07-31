@@ -39,7 +39,7 @@ jobs:
           ConnectionStrings__DefaultConnection: "Server=localhost;Database=LoanApplicationPlatformMigration;User Id=sa;Password=NotARealPassword!123;TrustServerCertificate=True;"
         run: |
           mkdir -p artifacts
-          dotnet ef migrations script \
+          "$HOME/.dotnet/tools/dotnet-ef" migrations script \
             --idempotent \
             --configuration Release \
             --project LoanApplicationPlatform.API/LoanApplicationPlatform.API.csproj \
