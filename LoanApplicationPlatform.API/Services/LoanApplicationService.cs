@@ -1,5 +1,6 @@
 using AutoMapper;
 using LoanApplicationPlatform.API.Constants;
+using LoanApplicationPlatform.API.DbContexts;
 using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Helpers;
 using LoanApplicationPlatform.API.Models;
@@ -12,15 +13,18 @@ namespace LoanApplicationPlatform.API.Services
         private readonly ILoanApplicationRepository _loanRepository;
         private readonly ITreasuryRepository _treasuryRepository;
         private readonly IMapper _mapper;
+        private readonly LoanApplicationPlatformContext _context;
 
         public LoanApplicationService(
             ILoanApplicationRepository loanRepository,
             ITreasuryRepository treasuryRepository,
-            IMapper mapper)
+            IMapper mapper,
+            LoanApplicationPlatformContext context)
         {
             _loanRepository = loanRepository ?? throw new ArgumentNullException(nameof(loanRepository));
             _treasuryRepository = treasuryRepository ?? throw new ArgumentNullException(nameof(treasuryRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<PagedList<LoanApplicationDto>> GetApplicationsAsync(int userId, string role, ResourceParameters parameters)
@@ -168,6 +172,8 @@ namespace LoanApplicationPlatform.API.Services
 
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReleaseFundsAsync(int id)
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return (false, "Application not found.", true);
 
@@ -208,8 +214,8 @@ namespace LoanApplicationPlatform.API.Services
             }
 
             application.Status = LoanStatus.Released;
-            await _loanRepository.SaveChangesAsync();
-            await _treasuryRepository.SaveChangesAsync();
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return (true, null, false);
         }

@@ -106,7 +106,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpPatch("{id}/review")]
-        [Authorize(Roles = "Reviewer")]
+        [Authorize(Policy = "RequireReviewerRole")]
         public async Task<ActionResult> ReviewApplication(int id, [FromBody] ReviewDto reviewDto)
         {
             var (success, errorMessage, notFound) = await _loanApplicationService.ReviewApplicationAsync(id, reviewDto);
@@ -117,7 +117,7 @@ namespace LoanApplicationPlatform.API.Controllers
         }
 
         [HttpPatch("{id}/approve")]
-        [Authorize(Roles = "Approver")]
+        [Authorize(Policy = "RequireApproverRole")]
         public async Task<ActionResult> ApproveApplication(int id, [FromBody] ApproveDto approveDto)
         {
             var (success, errorMessage, notFound) = await _loanApplicationService.ApproveApplicationAsync(id, approveDto);

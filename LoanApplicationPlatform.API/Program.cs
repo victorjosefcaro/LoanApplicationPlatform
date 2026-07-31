@@ -54,10 +54,10 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireAdminRole", policy => policy.RequireClaim("role", "Admin"));
-    options.AddPolicy("RequireReviewerRole", policy => policy.RequireClaim("role", "Reviewer", "Admin"));
-    options.AddPolicy("RequireApproverRole", policy => policy.RequireClaim("role", "Approver", "Admin"));
-    options.AddPolicy("RequireApplicantRole", policy => policy.RequireClaim("role", "Applicant"));
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireReviewerRole", policy => policy.RequireRole("Reviewer", "Admin"));
+    options.AddPolicy("RequireApproverRole", policy => policy.RequireRole("Approver", "Admin"));
+    options.AddPolicy("RequireApplicantRole", policy => policy.RequireRole("Applicant"));
 });
 
 builder.Services.AddHttpContextAccessor();

@@ -1,5 +1,6 @@
 using AutoMapper;
 using LoanApplicationPlatform.API.Constants;
+using LoanApplicationPlatform.API.DbContexts;
 using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Repositories;
@@ -11,15 +12,18 @@ namespace LoanApplicationPlatform.API.Services
         private readonly ILoanApplicationRepository _loanRepository;
         private readonly ITreasuryRepository _treasuryRepository;
         private readonly IMapper _mapper;
+        private readonly LoanApplicationPlatformContext _context;
 
         public PaymentService(
             ILoanApplicationRepository loanRepository,
             ITreasuryRepository treasuryRepository,
-            IMapper mapper)
+            IMapper mapper,
+            LoanApplicationPlatformContext context)
         {
             _loanRepository = loanRepository ?? throw new ArgumentNullException(nameof(loanRepository));
             _treasuryRepository = treasuryRepository ?? throw new ArgumentNullException(nameof(treasuryRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<(IEnumerable<PaymentScheduleDto>? Schedules, string? ErrorMessage, bool NotFound, bool Forbid)> GetPaymentSchedulesAsync(int loanApplicationId, int userId, string role)
@@ -66,6 +70,8 @@ namespace LoanApplicationPlatform.API.Services
 
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> PostPaymentAsync(int loanApplicationId, int scheduleId, PaymentDto paymentDto)
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
             var schedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
             var scheduleToPost = schedules.FirstOrDefault(s => s.Id == scheduleId);
 
@@ -124,8 +130,8 @@ namespace LoanApplicationPlatform.API.Services
                 }
             }
 
-            await _loanRepository.SaveChangesAsync();
-            await _treasuryRepository.SaveChangesAsync();
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
             return (true, null, false);
         }
     }
