@@ -3,7 +3,7 @@
 This project uses SQL Server through EF Core, so the simplest deployment is:
 
 ```text
-Azure App Service (Free F1) → Azure SQL Database (Free offer)
+Azure App Service (Free F1) -> Azure SQL Database (Free offer)
 ```
 
 The free App Service tier is intended for testing and has a daily CPU quota. The Azure SQL free offer has monthly compute and storage limits. Monitor both services in Azure Cost Management.
