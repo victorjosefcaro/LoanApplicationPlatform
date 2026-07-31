@@ -29,7 +29,9 @@ jobs:
         run: dotnet build LoanApplicationPlatform.slnx --configuration Release --no-restore
 
       - name: Install EF Core CLI
-        run: dotnet tool install --global dotnet-ef --version 8.0.0
+        run: |
+          dotnet tool install --global dotnet-ef --version 8.0.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Generate idempotent SQL migration script
         run: |
