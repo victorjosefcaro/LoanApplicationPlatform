@@ -22,7 +22,7 @@
 				"type": "text/javascript",
 				"exec": [
 					"// Collection-level pre-request: warn if no token is set for protected endpoints",
-					"const noAuthPaths = ['/api/authentication/login', '/api/authentication/authenticate', '/api/authentication/register'];",
+					"const noAuthPaths = ['/api/authentication/login', '/api/authentication/register'];",
 					"const currentUrl = pm.request.url.toString().toLowerCase();",
 					"const isPublic = noAuthPaths.some(p => currentUrl.includes(p));",
 					"",

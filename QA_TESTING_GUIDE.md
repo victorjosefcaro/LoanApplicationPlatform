@@ -77,25 +77,23 @@ To test the full lifecycle of a loan application:
 
 ```mermaid
 graph TD
-    A["1. Register/Login as Applicant"] --> B["2. POST /api/loanapplications (Draft)"]
-    B --> C["3. PATCH /api/loanapplications/{id}/submit (Submitted)"]
-    C --> D["4. Switch Token to Reviewer"]
-    D --> E["5. PATCH /api/loanapplications/{id}/review (Reviewed)"]
-    E --> F["6. Switch Token to Approver"]
-    F --> G["7. PATCH /api/loanapplications/{id}/approve (Approved)"]
-    G --> H["8. Switch Token to Admin"]
-    H --> I["9. POST /api/loanapplications/{id}/release (Released)"]
-    I --> J["10. GET /api/loanapplications/{id}/payments"]
-    J --> K["11. Applicant Submits Payment & Admin Posts Payment"]
+    A["1. Register/Login as Applicant"] --> B["2. POST /api/loanapplications (Submitted)"]
+    B --> C["3. Switch Token to Reviewer"]
+    C --> D["4. PATCH /api/loanapplications/{id}/review (Reviewed)"]
+    D --> E["5. Switch Token to Approver"]
+    E --> F["6. PATCH /api/loanapplications/{id}/approve (Approved)"]
+    F --> G["7. Switch Token to Admin"]
+    G --> H["8. POST /api/loanapplications/{id}/release (Released)"]
+    H --> I["9. GET /api/loanapplications/{id}/payments"]
+    I --> J["10. Applicant Submits Payment & Admin Posts Same Amount"]
 ```
 
 ### Step-by-Step E2E Checklist:
 
-1. **Create & Submit Application (Applicant)**
+1. **Create Application (Applicant)**
    - Run `Login Applicant` or `Register Applicant`.
-   - Run `POST /api/loanapplications`. *Script auto-saves `loan_application_id`.*
-   - (Optional) Run `PUT /api/loanapplications/{id}` to update draft fields.
-   - Run `PATCH /api/loanapplications/{id}/submit`.
+   - Run `POST /api/loanapplications`. *Script auto-saves `loan_application_id`.* The new application starts in `Submitted` status.
+   - Returned applications can be updated and resubmitted with `PUT /api/loanapplications/{id}`.
 
 2. **Review Application (Reviewer)**
    - Create a Reviewer user via `admin` using `POST /api/authentication/admin/register` (`role`: `"Reviewer"`).
@@ -114,8 +112,8 @@ graph TD
 
 5. **Payment Amortization & Posting**
    - Run `GET /api/loanapplications/{id}/payments`. *Script auto-saves `schedule_id`.*
-   - Authenticate as Applicant -> Run `POST /api/loanapplications/{id}/payments/{scheduleId}/submit`.
-   - Authenticate as Admin -> Run `POST /api/loanapplications/{id}/payments/{scheduleId}/post`.
+   - Authenticate as Applicant -> Run `POST /api/loanapplications/{id}/payments/{scheduleId}/submit` with the amount being paid.
+   - Authenticate as Admin -> Run `POST /api/loanapplications/{id}/payments/{scheduleId}/post` with exactly the same amount.
 
 ---
 
