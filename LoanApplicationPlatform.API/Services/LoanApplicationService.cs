@@ -5,6 +5,7 @@ using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Helpers;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace LoanApplicationPlatform.API.Services
 {
@@ -173,6 +174,8 @@ namespace LoanApplicationPlatform.API.Services
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReleaseFundsAsync(int id)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC sp_getapplock @Resource = N'LoanApplicationPlatform.Treasury', @LockMode = N'Exclusive', @LockOwner = N'Transaction';");
 
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return (false, "Application not found.", true);

@@ -4,6 +4,7 @@ using LoanApplicationPlatform.API.DbContexts;
 using LoanApplicationPlatform.API.Entities;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace LoanApplicationPlatform.API.Services
 {
@@ -71,6 +72,8 @@ namespace LoanApplicationPlatform.API.Services
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> PostPaymentAsync(int loanApplicationId, int scheduleId, PaymentDto paymentDto)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
+            await _context.Database.ExecuteSqlRawAsync(
+                "EXEC sp_getapplock @Resource = N'LoanApplicationPlatform.Treasury', @LockMode = N'Exclusive', @LockOwner = N'Transaction';");
 
             var schedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
             var scheduleToPost = schedules.FirstOrDefault(s => s.Id == scheduleId);
