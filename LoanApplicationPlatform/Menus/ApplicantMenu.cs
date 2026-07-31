@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using LoanApplicationPlatform.ConsoleApp.Models;
 using LoanApplicationPlatform.ConsoleApp.Services;
 
 namespace LoanApplicationPlatform.ConsoleApp.Menus
