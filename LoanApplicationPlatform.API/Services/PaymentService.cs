@@ -50,7 +50,14 @@ namespace LoanApplicationPlatform.API.Services
 
             if (scheduleToPay.Status == PaymentStatus.Paid) return (false, "This schedule is already paid.", false, false);
 
-            scheduleToPay.SubmittedAmount = amount ?? (scheduleToPay.AmountDue - scheduleToPay.AmountPaid);
+            var submittedAmount = amount ?? (scheduleToPay.AmountDue - scheduleToPay.AmountPaid);
+            if (submittedAmount <= 0)
+                return (false, "Payment amount must be greater than zero.", false, false);
+
+            if (submittedAmount > scheduleToPay.AmountDue - scheduleToPay.AmountPaid)
+                return (false, "Payment amount exceeds the remaining balance for this schedule.", false, false);
+
+            scheduleToPay.SubmittedAmount = submittedAmount;
             scheduleToPay.Status = PaymentStatus.PaymentSubmitted;
 
             await _loanRepository.SaveChangesAsync();
@@ -64,8 +71,14 @@ namespace LoanApplicationPlatform.API.Services
 
             if (scheduleToPost == null) return (false, "Payment schedule not found.", true);
 
-            if (scheduleToPost.Status != PaymentStatus.PaymentSubmitted && scheduleToPost.Status != PaymentStatus.PartiallyPaid)
-                return (false, "Schedule must be in Submitted or Partially Paid status to post.", false);
+            if (scheduleToPost.Status != PaymentStatus.PaymentSubmitted)
+                return (false, "Schedule must have a submitted payment to post.", false);
+
+            if (!scheduleToPost.SubmittedAmount.HasValue)
+                return (false, "A submitted payment amount is required before posting.", false);
+
+            if (paymentDto.Amount != scheduleToPost.SubmittedAmount.Value)
+                return (false, "Posted payment amount must match the applicant's submitted amount.", false);
 
             if (paymentDto.Amount > scheduleToPost.AmountDue - scheduleToPost.AmountPaid)
             {
@@ -82,6 +95,8 @@ namespace LoanApplicationPlatform.API.Services
             {
                 scheduleToPost.Status = PaymentStatus.PartiallyPaid;
             }
+
+            scheduleToPost.SubmittedAmount = null;
 
             // Update Treasury
             var treasury = await _treasuryRepository.GetTreasuryAsync();
