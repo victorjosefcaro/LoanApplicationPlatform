@@ -13,6 +13,7 @@ namespace LoanApplicationPlatform.API.Models
         [Required]
         public string? Role { get; set; }
 
+        [Range(1, int.MaxValue)]
         public int? TenantId { get; set; }
     }
 }

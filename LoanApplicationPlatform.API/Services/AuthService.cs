@@ -1,6 +1,8 @@
 using LoanApplicationPlatform.API.Entities;
+using LoanApplicationPlatform.API.DbContexts;
 using LoanApplicationPlatform.API.Models;
 using LoanApplicationPlatform.API.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,11 +14,16 @@ namespace LoanApplicationPlatform.API.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly LoanApplicationPlatformContext _context;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(
+            IUserRepository userRepository,
+            IConfiguration configuration,
+            LoanApplicationPlatformContext context)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<string?> AuthenticateAsync(LoginRequestDto loginRequest)
@@ -62,6 +69,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Username and Password are required.");
             }
 
+            var tenantId = requestBody.TenantId ?? 1;
+            if (!await _context.Tenants.AnyAsync(t => t.Id == tenantId))
+            {
+                return (false, "The selected tenant does not exist.");
+            }
+
             var existingUser = await _userRepository.GetByUsernameAsync(requestBody.Username, ignoreQueryFilters: true);
             if (existingUser != null)
             {
@@ -72,13 +85,9 @@ namespace LoanApplicationPlatform.API.Services
             {
                 Username = requestBody.Username,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
-                Role = "Applicant"
+                Role = "Applicant",
+                TenantId = tenantId
             };
-
-            if (requestBody.TenantId.HasValue && requestBody.TenantId.Value > 0)
-            {
-                newUser.TenantId = requestBody.TenantId.Value;
-            }
 
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();
@@ -99,6 +108,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, $"Invalid role. Valid roles are: {string.Join(", ", validRoles)}.");
             }
 
+            var tenantId = requestBody.TenantId ?? 1;
+            if (!await _context.Tenants.AnyAsync(t => t.Id == tenantId))
+            {
+                return (false, "The selected tenant does not exist.");
+            }
+
             var existingUser = await _userRepository.GetByUsernameAsync(requestBody.Username, ignoreQueryFilters: true);
             if (existingUser != null)
             {
@@ -109,13 +124,9 @@ namespace LoanApplicationPlatform.API.Services
             {
                 Username = requestBody.Username,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(requestBody.Password),
-                Role = requestBody.Role
+                Role = requestBody.Role,
+                TenantId = tenantId
             };
-
-            if (requestBody.TenantId.HasValue && requestBody.TenantId.Value > 0)
-            {
-                newUser.TenantId = requestBody.TenantId.Value;
-            }
 
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();

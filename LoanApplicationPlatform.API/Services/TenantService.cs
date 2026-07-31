@@ -19,7 +19,7 @@ namespace LoanApplicationPlatform.API.Services
                 return tenantId;
             }
 
-            return 1;
+            return 0;
         }
     }
 }
