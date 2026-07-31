@@ -32,7 +32,7 @@ namespace LoanApplicationPlatform.ConsoleApp.Services
 
         public async Task<(bool IsSuccess, string? ErrorMessage)> LoginAsync(string username, string password)
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/authentication/authenticate", new { Username = username, Password = password });
+            var response = await _httpClient.PostAsJsonAsync("/api/authentication/login", new { Username = username, Password = password });
             if (response.IsSuccessStatusCode)
             {
                 SetToken(await response.Content.ReadAsStringAsync());
