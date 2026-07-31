@@ -1,0 +1,55 @@
+name: Deploy API to Azure App Service
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore LoanApplicationPlatform.slnx
+
+      - name: Build solution
+        run: dotnet build LoanApplicationPlatform.slnx --configuration Release --no-restore
+
+      - name: Install EF Core CLI
+        run: dotnet tool install --global dotnet-ef --version 8.0.0
+
+      - name: Generate idempotent SQL migration script
+        run: |
+          mkdir -p artifacts
+          dotnet ef migrations script \
+            --idempotent \
+            --configuration Release \
+            --project LoanApplicationPlatform.API/LoanApplicationPlatform.API.csproj \
+            --startup-project LoanApplicationPlatform.API/LoanApplicationPlatform.API.csproj \
+            --output artifacts/azure-migrations.sql
+
+      - name: Publish API
+        run: dotnet publish LoanApplicationPlatform.API/LoanApplicationPlatform.API.csproj --configuration Release --no-restore --output ./publish
+
+      - name: Upload migration script
+        uses: actions/upload-artifact@v4
+        with:
+          name: azure-migrations
+          path: artifacts/azure-migrations.sql
+
+      - name: Deploy API to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
