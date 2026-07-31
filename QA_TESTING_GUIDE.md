@@ -24,6 +24,8 @@ The repository includes pre-built Postman files inside the [`postman/`](file:///
 - 📄 **[Collection File](file:///c:/Users/vbcaro/source/repos/LoanApplicationPlatform/postman/LoanApplicationPlatform.postman_collection.json)**: `postman/LoanApplicationPlatform.postman_collection.json`
 - 🌐 **[Environment File](file:///c:/Users/vbcaro/source/repos/LoanApplicationPlatform/postman/LoanApplicationPlatform.postman_environment.json)**: `postman/LoanApplicationPlatform.postman_environment.json`
 
+For the deployed API, import `postman/LoanApplicationPlatform.postman_environment.azure.json` and replace its `baseUrl` value with the App Service URL. Deployment instructions are in [`AZURE_DEPLOYMENT_GUIDE.md`](AZURE_DEPLOYMENT_GUIDE.md).
+
 ### Importing into Postman
 1. Open Postman.
 2. Click **Import** (top left) and select both JSON files from the `postman/` directory.
