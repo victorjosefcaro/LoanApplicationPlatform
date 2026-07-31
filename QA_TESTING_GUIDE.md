@@ -115,6 +115,10 @@ graph TD
    - Authenticate as Applicant -> Run `POST /api/loanapplications/{id}/payments/{scheduleId}/submit` with the amount being paid.
    - Authenticate as Admin -> Run `POST /api/loanapplications/{id}/payments/{scheduleId}/post` with exactly the same amount.
 
+6. **Review Status History**
+   - Run `GET /api/loanapplications/{id}/history` as the applicant, reviewer, approver, or admin.
+   - Verify that status transitions include the previous status, new status, actor, timestamp, and remarks.
+
 ---
 
 ## 6. Multi-Tenancy & Authorization Rules to Test (QA Edge Cases)
