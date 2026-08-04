@@ -74,17 +74,19 @@ builder.Services.AddScoped<ILoanApplicationService, LoanApplicationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.AddDbContext<LoanApplicationPlatform.API.DbContexts.LoanApplicationPlatformContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null)));
 
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<LoanApplicationPlatform.API.Profiles.LoanApplicationProfile>());
 
 var app = builder.Build();
 
-// Automatically apply EF Core migrations only for local development.
-// Production schema changes should be handled by the deployment pipeline.
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<LoanApplicationPlatform.API.DbContexts.LoanApplicationPlatformContext>();
     dbContext.Database.Migrate();
 }
