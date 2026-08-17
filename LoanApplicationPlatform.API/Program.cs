@@ -11,6 +11,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+// Allow the local frontend dev server (Vite) to call the API cross-origin.
+const string FrontendCorsPolicy = "FrontendDev";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+        policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(setupAction =>
@@ -98,7 +108,15 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors(FrontendCorsPolicy);
+
+// Skip HTTPS redirection in development so the Vite dev server can call the
+// plain-HTTP endpoint (http://localhost:5131). A 307 redirect to HTTPS strips
+// CORS headers on preflight (OPTIONS) requests, which breaks the browser.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

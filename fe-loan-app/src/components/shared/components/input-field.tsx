@@ -28,7 +28,7 @@ type IInputField = {
   options?: IInputFieldOption[]
   inputStyle?: string
   isRequired?: boolean
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   readOnly?: boolean
   disabled?: boolean
   placeholder?: string
@@ -38,9 +38,10 @@ type IInputField = {
 }
 
 const SIZE: Record<NonNullable<IInputField['size']>, string> = {
-  sm: 'h-7 text-[0.8rem]',
-  md: 'h-8 text-[0.85rem]',
-  lg: 'h-9',
+  sm: 'h-7 py-0 text-[0.8rem]',
+  md: 'h-8 py-0 text-[0.85rem]',
+  lg: 'h-9 py-0',
+  xl: 'h-11 py-0 text-base md:text-base',
 }
 
 const InputField = ({
@@ -90,7 +91,7 @@ const InputField = ({
     <div className="flex w-full flex-col gap-1">
       {label && (
         <div className={`${labelStyle}`}>
-          <span className="font-semibold">{label}</span>{' '}
+          <span className="font-semibold text-lg">{label}</span>{' '}
           {isRequired && <span className="text-destructive">*</span>}
         </div>
       )}
