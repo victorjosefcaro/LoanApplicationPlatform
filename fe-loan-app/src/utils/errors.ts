@@ -2,10 +2,7 @@ type WithResponse = {
   response?: { status?: number; data?: unknown }
 }
 
-/**
- * Turn any thrown value into a message we can show. Loanly's voice: errors
- * say what happened, never a bare "Something went wrong" when we can do better.
- */
+// Turn any thrown value into a user-facing message.
 export const getErrorMessage = (
   error: unknown,
   fallback = 'Something broke on our end. Try again in a moment.',

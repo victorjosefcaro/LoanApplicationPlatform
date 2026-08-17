@@ -7,7 +7,7 @@ const TONE_CLASS: Record<Tone, string> = {
   success: 'bg-brand text-white',
   warning: 'bg-gold-tint text-ink ring-1 ring-gold/50',
   danger: 'bg-coral/12 text-coral',
-  muted: 'bg-line text-muted',
+  muted: 'bg-line text-brand',
 }
 
 type PillProps = {

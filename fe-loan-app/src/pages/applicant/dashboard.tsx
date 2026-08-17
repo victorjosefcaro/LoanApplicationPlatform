@@ -7,7 +7,7 @@ import type { PaymentSchedule } from '@/api/payments/payments.types'
 import { formatDate } from '@/utils/format'
 import { repaymentProgress } from '@/utils/finance'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Money } from '@/components/money/money'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
@@ -27,19 +27,20 @@ const nextUnpaid = (schedules: PaymentSchedule[]): PaymentSchedule | null => {
 }
 
 const QuickActions = ({ onGo }: { onGo: (path: string) => void }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Quick actions</CardTitle>
-    </CardHeader>
-    <CardContent className="grid gap-2">
-      <Button variant="outline" className="justify-start" onClick={() => onGo('/loans/new')}>
-        <FiPlusCircle className="size-4" /> Apply for a loan
-      </Button>
-      <Button variant="outline" className="justify-start" onClick={() => onGo('/loans')}>
-        <FiFileText className="size-4" /> View my loans
-      </Button>
-    </CardContent>
-  </Card>
+  <Card
+    title="Quick actions"
+    contentClassName="grid gap-2"
+    content={
+      <>
+        <Button variant="outline" className="justify-start" onClick={() => onGo('/loans/new')}>
+          <FiPlusCircle className="size-4" /> Apply for a loan
+        </Button>
+        <Button variant="outline" className="justify-start" onClick={() => onGo('/loans')}>
+          <FiFileText className="size-4" /> View my loans
+        </Button>
+      </>
+    }
+  />
 )
 
 export const DashboardPage = () => {
@@ -58,7 +59,9 @@ export const DashboardPage = () => {
   const next = nextUnpaid(schedules)
 
   if (loansQuery.isLoading) return <LoadingState label="Loading your dashboard…" />
-  if (loansQuery.isError) return <ErrorState error={loansQuery.error} onRetry={loansQuery.refetch} />
+  if (loansQuery.isError) {
+    return <ErrorState error={loansQuery.error} onRetry={loansQuery.refetch} />
+  }
 
   const nothingYet = loans.length === 0
 
@@ -79,88 +82,85 @@ export const DashboardPage = () => {
       ) : (
         <div className="space-y-5">
           <div className="grid gap-5 lg:grid-cols-2">
-            {/* In-review application */}
             {inReview ? (
-              <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>Application in progress</CardTitle>
-                  <LoanStatusPill status={inReview.status} />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted">{inReview.purpose}</p>
-                    <p className="font-heading text-2xl font-bold text-ink">
-                      <Money amount={inReview.amount} />
-                    </p>
-                  </div>
-                  <LoanLifecycle status={inReview.status} />
-                  <Button variant="ghost" className="px-0" onClick={() => navigate(`/loans/${inReview.id}`)}>
-                    View application <FiArrowRight className="size-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Apply for a loan</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted">
-                    Need funds? Start an application and see your estimate instantly.
-                  </p>
-                  <Button onClick={() => navigate('/loans/new')}>
-                    <FiPlusCircle className="size-4" /> Apply for a loan
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Active loan repayment */}
-            {active && (
-              <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>Your loan</CardTitle>
-                  <LoanStatusPill status={active.status} />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-end justify-between">
+              <Card
+                title="Application in progress"
+                action={<LoanStatusPill status={inReview.status} />}
+                contentClassName="space-y-4"
+                content={
+                  <>
                     <div>
-                      <p className="text-sm text-muted">Repaid</p>
+                      <p className="text-sm text-brand">{inReview.purpose}</p>
                       <p className="font-heading text-2xl font-bold text-ink">
-                        <Money amount={totalPaid} />
+                        <Money amount={inReview.amount} />
                       </p>
                     </div>
-                    <p className="text-sm text-muted">
-                      of <Money amount={totalDue} />
+                    <LoanLifecycle status={inReview.status} />
+                    <Button
+                      variant="ghost"
+                      className=""
+                      onClick={() => navigate(`/loans/${inReview.id}`)}
+                    >
+                      View application <FiArrowRight className="size-4" />
+                    </Button>
+                  </>
+                }
+              />
+            ) : (
+              <Card
+                title="Apply for a loan"
+                contentClassName="space-y-3"
+                content={
+                  <>
+                    <p className="text-sm text-brand">
+                      Need funds? Start an application and see your estimate instantly.
                     </p>
-                  </div>
-                  <ProgressBar value={repaymentProgress(totalPaid, totalDue)} />
-                  {next && (
-                    <div className="flex items-center justify-between rounded-lg bg-gold-tint px-3 py-2 text-sm">
-                      <span className="text-ink">Next payment · {formatDate(next.dueDate)}</span>
-                      <span className="font-semibold text-ink">
-                        <Money amount={Math.max(0, next.amountDue - next.amountPaid)} />
-                      </span>
+                    <Button onClick={() => navigate('/loans/new')}>
+                      <FiPlusCircle className="size-4" /> Apply for a loan
+                    </Button>
+                  </>
+                }
+              />
+            )}
+
+            {active && (
+              <Card
+                title="Your loan"
+                action={<LoanStatusPill status={active.status} />}
+                contentClassName="space-y-4"
+                content={
+                  <>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-sm text-brand">Repaid</p>
+                        <p className="font-heading text-2xl font-bold text-ink">
+                          <Money amount={totalPaid} />
+                        </p>
+                      </div>
+                      <p className="text-sm text-brand">
+                        of <Money amount={totalDue} />
+                      </p>
                     </div>
-                  )}
-                  <Button onClick={() => navigate(`/loans/${active.id}/pay`)}>
-                    <FiCreditCard className="size-4" /> Make a payment
-                  </Button>
-                </CardContent>
-              </Card>
+                    <ProgressBar value={repaymentProgress(totalPaid, totalDue)} />
+                    {next && (
+                      <div className="flex items-center justify-between rounded-lg bg-gold-tint px-3 py-2 text-sm">
+                        <span className="text-ink">Next payment · {formatDate(next.dueDate)}</span>
+                        <span className="font-semibold text-ink">
+                          <Money amount={Math.max(0, next.amountDue - next.amountPaid)} />
+                        </span>
+                      </div>
+                    )}
+                    <Button onClick={() => navigate(`/loans/${active.id}/pay`)}>
+                      <FiCreditCard className="size-4" /> Make a payment
+                    </Button>
+                  </>
+                }
+              />
             )}
           </div>
 
-          {/* Schedule for the active loan */}
           {active && schedules.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment schedule</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScheduleTable schedules={schedules} />
-              </CardContent>
-            </Card>
+            <Card title="Payment schedule" content={<ScheduleTable schedules={schedules} />} />
           )}
 
           <div className="grid gap-5 lg:grid-cols-2">

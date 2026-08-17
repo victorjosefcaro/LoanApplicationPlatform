@@ -1,4 +1,3 @@
-// ─── Shared API types (global ambient) ──────────────────────────────────────
 type ApiBodyResponse<T> = {
   data?: T
   error?: { type: string; message?: string }
@@ -13,14 +12,12 @@ type ApiResponse<T> = {
   headers: Record<string, string>
 }
 
-// Standard shape for endpoints that only return a status message (e.g. the
-// 204 No Content mutations: update, cancel, review, approve, release, ...).
+// Endpoints that only return a status message.
 type MessageResponse = {
   message: string
 }
 
-// Serialized value of the `X-Pagination` response header returned by paged
-// endpoints (e.g. GET /loanapplications, GET /treasury/transactions).
+// Value of the `X-Pagination` response header on paged endpoints.
 type PaginationMetadata = {
   totalCount: number
   pageSize: number
@@ -30,8 +27,7 @@ type PaginationMetadata = {
   hasNext: boolean
 }
 
-// Paged endpoints return the items as the JSON body and the pagination
-// metadata in the `X-Pagination` header; this stitches them back together.
+// Items (JSON body) stitched together with the X-Pagination metadata.
 type PagedResult<T> = {
   items: T[]
   pagination: PaginationMetadata | null

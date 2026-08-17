@@ -26,7 +26,7 @@ export const RegisterPage = () => {
     const creds = { username: username.trim(), password }
     register.mutate(creds, {
       onSuccess: () => {
-        // Registration returns no token, so sign in immediately with the same creds.
+        // Registration returns no token; sign in with the same creds.
         login.mutate(creds, {
           onSuccess: (token) => {
             signIn(token, creds.username)

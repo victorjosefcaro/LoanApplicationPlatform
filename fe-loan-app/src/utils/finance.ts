@@ -1,9 +1,6 @@
 import { ANNUAL_INTEREST_RATE } from '@/constants'
 
-/**
- * Standard amortized monthly payment. Used for the indicative estimate on the
- * create-loan screen only; the backend owns the real schedule.
- */
+// Amortized monthly payment — indicative estimate only; the backend owns the real schedule.
 export const estimateMonthlyPayment = (
   amount: number,
   termInMonths: number,
@@ -19,7 +16,7 @@ export const estimateMonthlyPayment = (
 export const estimateTotalRepayment = (amount: number, termInMonths: number): number =>
   estimateMonthlyPayment(amount, termInMonths) * termInMonths
 
-/** Ratio 0..1 of how much of a loan (or schedule) has been repaid. */
+// Ratio 0..1 of how much has been repaid.
 export const repaymentProgress = (paid: number, total: number): number => {
   if (!total || total <= 0) return 0
   return Math.min(1, Math.max(0, paid / total))

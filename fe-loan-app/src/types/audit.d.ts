@@ -1,7 +1,4 @@
-// ─── Shared audit fields (global ambient) ────────────────────────────────────
-// Mixed into persisted entity types, mirroring the reference `src/types` usage
-// where record shapes are declared as `SomeEntity & AuditFields`.
-
+// Shared audit fields, mixed into persisted entity types (`SomeEntity & AuditFields`).
 type AuditFields = {
   createdByUserId?: string | number | null
   updatedByUserId?: string | number | null

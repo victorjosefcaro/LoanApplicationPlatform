@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 
 const MOBILE_BREAKPOINT = 768
 
-/**
- * Returns `true` while the viewport is narrower than `breakpoint` (px).
- * SSR-safe: falls back to `false` when `window` is unavailable.
- */
+// True while the viewport is narrower than `breakpoint` (px). SSR-safe.
 const useIsMobile = (breakpoint: number = MOBILE_BREAKPOINT): boolean => {
   const [isMobile, setIsMobile] = useState<boolean>(
     typeof window !== 'undefined' ? window.innerWidth < breakpoint : false,

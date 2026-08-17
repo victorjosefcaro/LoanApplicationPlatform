@@ -1,8 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import {
-  useTreasuryBalance,
-  useTreasuryTransactions,
-} from '@/api/treasury/treasury.queries'
+import { useTreasuryBalance, useTreasuryTransactions } from '@/api/treasury/treasury.queries'
 import { useDepositFunds } from '@/api/treasury/treasury.mutations'
 import type { TreasuryTransaction } from '@/api/treasury/treasury.types'
 import { ROLES } from '@/constants'
@@ -13,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import InputField from '@/components/shared/components/input-field'
 import { Money } from '@/components/money/money'
-import DataTable, { type ColumnDef } from '@/components/shared'
+import { DataTable, type ColumnDef } from '@/components/shared'
 import { LoadingState, ErrorState, InlineError } from '@/components/states'
 
 const PAGE_SIZE = 10
@@ -48,7 +45,11 @@ const DepositForm = () => {
           {deposit.isSuccess && (
             <p className="text-sm font-medium text-brand">Funds added to Treasury.</p>
           )}
-          <Button type="submit" variant="gold" disabled={deposit.isPending || !(Number(amount) > 0)}>
+          <Button
+            type="submit"
+            variant="gold"
+            disabled={deposit.isPending || !(Number(amount) > 0)}
+          >
             {deposit.isPending ? 'Depositing…' : 'Deposit'}
           </Button>
         </form>
@@ -140,7 +141,7 @@ export const TreasuryPage = () => {
               </CardContent>
             </Card>
           ) : (
-            <p className="text-sm text-muted">
+            <p className="text-sm text-brand">
               Only admins can deposit funds or view the transaction ledger.
             </p>
           )}

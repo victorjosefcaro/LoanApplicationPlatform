@@ -10,7 +10,6 @@ export const AppShell = () => {
 
   return (
     <div className="min-h-dvh bg-bg">
-      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-64 md:block">
         <Sidebar />
       </aside>

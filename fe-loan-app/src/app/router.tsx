@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { STAFF_ROLES, ROLES } from '@/constants'
 import { RequireAuth, RedirectIfSignedIn } from '@/auth/require-auth'
 import { AppShell } from '@/components/layout/app-shell'
@@ -21,13 +21,13 @@ import { AdminLoanPaymentsPage } from '@/pages/admin/loan-payments'
 import { TreasuryPage } from '@/pages/admin/treasury'
 
 import { ComponentsGalleryPage } from '@/pages/dev/components-gallery'
+import { NotFoundPage } from '@/pages/not-found'
+import { RouteErrorBoundary } from '@/components/route-error-boundary'
 
 const applicantOnly = (element: ReactNode) => (
   <RequireAuth roles={[ROLES.APPLICANT]}>{element}</RequireAuth>
 )
-const staffOnly = (element: ReactNode) => (
-  <RequireAuth roles={STAFF_ROLES}>{element}</RequireAuth>
-)
+const staffOnly = (element: ReactNode) => <RequireAuth roles={STAFF_ROLES}>{element}</RequireAuth>
 
 export const router = createBrowserRouter([
   {
@@ -51,9 +51,9 @@ export const router = createBrowserRouter([
     element: <ComponentsGalleryPage />,
   },
 
-  // Applicant area
   {
     element: applicantOnly(<AppShell />),
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: '/', element: <DashboardPage /> },
       { path: '/loans', element: <LoansPage /> },
@@ -64,9 +64,9 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Staff (admin / reviewer / approver) area
   {
     element: staffOnly(<AppShell />),
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: '/admin', element: <ReviewQueuePage /> },
       { path: '/admin/register', element: <AdminRegisterPage /> },
@@ -76,5 +76,5 @@ export const router = createBrowserRouter([
     ],
   },
 
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <NotFoundPage /> },
 ])

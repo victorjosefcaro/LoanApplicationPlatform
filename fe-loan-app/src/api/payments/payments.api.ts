@@ -14,8 +14,7 @@ export const getPaymentSchedules = async (
   return unwrap(response)
 }
 
-// Applicant-initiated payment. Amount is optional — the API defaults to the
-// scheduled amount due when omitted.
+// Applicant-initiated payment; amount defaults to the scheduled amount due when omitted.
 export const submitPayment = async (
   loanApplicationId: number,
   scheduleId: number,
@@ -28,7 +27,7 @@ export const submitPayment = async (
   return unwrap(response)
 }
 
-// Admin-initiated posting of a payment against a schedule.
+// Admin-initiated posting against a schedule.
 export const postPayment = async (
   loanApplicationId: number,
   scheduleId: number,

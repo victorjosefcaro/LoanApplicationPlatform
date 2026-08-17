@@ -8,13 +8,14 @@ import {
 import { useCancelLoanApplication } from '@/api/loan-applications/loan-applications.mutations'
 import { isEditableLoan } from '@/constants'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
 import { LoanSummary } from '@/components/loan/loan-summary'
 import { HistoryTimeline } from '@/components/loan/history-timeline'
-import { LoadingState, ErrorState, EmptyState, InlineError } from '@/components/states'
-import ModalDialog from '@/components/shared/components/modal-dialog'
+import { LoadingState, ErrorState, InlineError } from '@/components/states'
+import { isNotFoundError, notFound } from '@/api/is-not-found-error'
+
+import { ModalDialog, Card } from '@/components/shared/index'
 
 export const LoanDetailPage = () => {
   const params = useParams()
@@ -26,23 +27,13 @@ export const LoanDetailPage = () => {
   const cancel = useCancelLoanApplication()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
+  if (!Number.isFinite(id)) throw notFound()
   if (loanQuery.isLoading) return <LoadingState label="Loading your application…" />
+  if (isNotFoundError(loanQuery.error)) throw notFound()
   if (loanQuery.isError) return <ErrorState error={loanQuery.error} onRetry={loanQuery.refetch} />
 
   const loan = loanQuery.data
-  if (!loan) {
-    return (
-      <EmptyState
-        title="We couldn't find that application"
-        message="It may have been removed, or the link is out of date."
-        action={
-          <Button variant="outline" onClick={() => navigate('/loans')}>
-            Back to my loans
-          </Button>
-        }
-      />
-    )
-  }
+  if (!loan) throw notFound()
 
   const editable = isEditableLoan(loan.status)
   const payable = loan.status === 'Released'
@@ -81,37 +72,22 @@ export const LoanDetailPage = () => {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LoanLifecycle status={loan.status} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LoanSummary loan={loan} />
-            </CardContent>
-          </Card>
+          <Card title="Status" content={<LoanLifecycle status={loan.status} />} />
+          <Card title="Details" content={<LoanSummary loan={loan} />} />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {historyQuery.isLoading && <p className="text-sm text-muted">Loading…</p>}
-            {historyQuery.isError && (
-              <ErrorState error={historyQuery.error} onRetry={historyQuery.refetch} />
-            )}
-            {historyQuery.data && <HistoryTimeline items={historyQuery.data} />}
-          </CardContent>
-        </Card>
+        <Card
+          title="History"
+          content={
+            <>
+              {historyQuery.isLoading && <p className="text-sm text-brand">Loading…</p>}
+              {historyQuery.isError && (
+                <ErrorState error={historyQuery.error} onRetry={historyQuery.refetch} />
+              )}
+              {historyQuery.data && <HistoryTimeline items={historyQuery.data} />}
+            </>
+          }
+        />
       </div>
 
       <ModalDialog
@@ -137,8 +113,10 @@ export const LoanDetailPage = () => {
           },
         ]}
       >
-        {cancel.isError ? <InlineError error={cancel.error} /> : (
-          <p className="text-sm text-muted">
+        {cancel.isError ? (
+          <InlineError error={cancel.error} />
+        ) : (
+          <p className="text-sm text-brand">
             Cancelling stops this application from moving forward.
           </p>
         )}

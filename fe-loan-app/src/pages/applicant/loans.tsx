@@ -16,19 +16,19 @@ const LoanRow = ({ loan }: { loan: LoanApplication }) => (
   >
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2">
-        <span className="truncate font-medium text-ink">{loan.purpose || 'Loan application'}</span>
+        <span className="truncate font-bold">{loan.purpose || 'Loan application'}</span>
         <LoanStatusPill status={loan.status} />
       </div>
-      <p className="mt-0.5 text-sm text-muted">
+      <p className="mt-0.5 text-sm text-black">
         {loan.termInMonths} months · applied {formatDate(loan.createdAt)}
       </p>
     </div>
     <div className="text-right">
-      <p className="font-heading text-lg font-bold text-ink">
+      <p className="font-heading text-lg font-bold">
         <Money amount={loan.amount} compact />
       </p>
     </div>
-    <FiChevronRight className="size-5 shrink-0 text-muted" />
+    <FiChevronRight className="size-5 shrink-0" />
   </Link>
 )
 
@@ -57,7 +57,6 @@ export const LoansPage = () => {
           <EmptyState
             title="No loans yet"
             message="When you're ready, apply for your first loan — it only takes a minute."
-            
           />
         ) : (
           <div className="space-y-3">

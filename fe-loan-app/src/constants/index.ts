@@ -7,7 +7,6 @@ export const STORAGE_KEYS = {
   },
 } as const
 
-// ─── Roles ───────────────────────────────────────────────────────────────────
 export const ROLES = {
   APPLICANT: 'Applicant',
   ADMIN: 'Admin',
@@ -15,13 +14,12 @@ export const ROLES = {
   APPROVER: 'Approver',
 } as const
 
-// Anyone in the back office. Applicants are everyone else.
+// Back office roles; applicants are everyone else.
 export const STAFF_ROLES: string[] = [ROLES.ADMIN, ROLES.REVIEWER, ROLES.APPROVER]
 
 export const isStaffRole = (role: string | null | undefined): boolean =>
   !!role && STAFF_ROLES.includes(role)
 
-// ─── Status presentation ─────────────────────────────────────────────────────
 export type Tone = 'info' | 'progress' | 'success' | 'warning' | 'danger' | 'muted'
 
 export const LOAN_STATUS_META: Record<string, { label: string; tone: Tone }> = {
@@ -48,13 +46,11 @@ export const loanStatusMeta = (status: string): { label: string; tone: Tone } =>
 export const paymentStatusMeta = (status: string): { label: string; tone: Tone } =>
   PAYMENT_STATUS_META[status] ?? { label: status, tone: 'muted' }
 
-// A loan is still editable/cancellable by the applicant only before review.
+// Applicant can edit/cancel only before review.
 export const EDITABLE_LOAN_STATUSES: string[] = ['Submitted', 'Returned']
 
-export const isEditableLoan = (status: string): boolean =>
-  EDITABLE_LOAN_STATUSES.includes(status)
+export const isEditableLoan = (status: string): boolean => EDITABLE_LOAN_STATUSES.includes(status)
 
-// ─── Finance ─────────────────────────────────────────────────────────────────
 export const ANNUAL_INTEREST_RATE = 0.12
 
 const TERM_MONTHS = [6, 12, 18, 24, 36, 48, 60]

@@ -84,8 +84,7 @@ const toPx = (value: string) => {
   return DEFAULT_COL_MIN_PX
 }
 
-// Builds a page list like [1, 'ellipsis', 4, 5, 6, 'ellipsis', 20] so the
-// pager stays a fixed, small width even when there are thousands of pages.
+// Page list like [1, 'ellipsis', 4, 5, 6, 'ellipsis', 20] — keeps the pager a fixed width.
 const getPageList = (current: number, total: number): (number | 'ellipsis')[] => {
   const delta = 1
   const pages: (number | 'ellipsis')[] = []
@@ -163,7 +162,7 @@ const ShadcnDataTable = <T,>({
 
   const rows = useMemo(() => (Array.isArray(data) ? data : []), [data])
 
-  // ─── Sort / filter state (client mode only) ──────────────────────────────
+  // Sort / filter state (client mode only)
   const [sortField, setSortField] = useState<keyof T | undefined>(undefined)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [filters, setFilters] = useState<Record<string, Set<string> | null>>({})
@@ -198,8 +197,7 @@ const ShadcnDataTable = <T,>({
   const setColumnFilter = (key: keyof T, next: Set<string> | null) =>
     setFilters((prev) => ({ ...prev, [key as string]: next }))
 
-  // ─── Search (client mode only — controlled mode assumes the caller
-  // already filtered `data` server-side using searchTerm) ──────────────────
+  // Search (client mode only; controlled mode assumes the caller filtered server-side).
   const searchedData = useMemo(() => {
     if (isControlled) return rows
 
@@ -241,7 +239,6 @@ const ShadcnDataTable = <T,>({
     return sortDirection === 'desc' ? next.reverse() : next
   }, [filteredData, sortField, sortDirection, isControlled])
 
-  // ─── Pagination ───────────────────────────────────────────────────────────
   const [internalPage, setInternalPage] = useState(1)
   const currentPage = isControlled ? (page as number) : internalPage
   const effectiveTotal = isControlled ? (totalCount as number) : sortedData.length
@@ -251,8 +248,7 @@ const ShadcnDataTable = <T,>({
     if (!isControlled && internalPage > totalPages) setInternalPage(totalPages)
   }, [internalPage, totalPages, isControlled])
 
-  // Reset to page 1 when the client-mode result set changes underneath us
-  // (new search term, new filter, new sort).
+  // Reset to page 1 when the client-mode result set changes.
   useEffect(() => {
     if (!isControlled) setInternalPage(1)
   }, [searchTerm, filters, sortField, sortDirection, isControlled])
@@ -275,7 +271,6 @@ const ShadcnDataTable = <T,>({
   const rangeStart = effectiveTotal === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const rangeEnd = Math.min(currentPage * pageSize, effectiveTotal)
 
-  // ─── Toolbar buttons ──────────────────────────────────────────────────────
   const toolbarButtons: ToolbarButton[] = [
     ...(showAddButton && onAdd
       ? [
@@ -296,7 +291,6 @@ const ShadcnDataTable = <T,>({
   const collapseButtons = toolbarButtons.length > MAX_INLINE_BUTTONS
   const [buttonsModalOpen, setButtonsModalOpen] = useState(false)
 
-  // ─── Column widths (mobile-responsive) ────────────────────────────────────
   const colWidth = (col: ColumnDef<T>) =>
     isMobile && col.mobileWidth ? col.mobileWidth : col.width
 
@@ -308,10 +302,8 @@ const ShadcnDataTable = <T,>({
     return `${sum + (actions ? 140 : 0)}px`
   }, [columns, isMobile, actions])
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={`rounded-xl border bg-white p-4 shadow-sm ${className}`}>
-      {/* Toolbar */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
           <FiSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -374,7 +366,6 @@ const ShadcnDataTable = <T,>({
         </Dialog>
       )}
 
-      {/* Table */}
       <div className="w-full overflow-x-auto">
         <Table style={{ minWidth: tableMinWidth }}>
           <TableHeader>
@@ -543,7 +534,6 @@ const ShadcnDataTable = <T,>({
         </Table>
       </div>
 
-      {/* Pagination */}
       {!isLoading && effectiveTotal > pageSize && (
         <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-sm text-gray-500">
@@ -606,16 +596,6 @@ const ShadcnDataTable = <T,>({
 
 export default ShadcnDataTable
 
-// ─── Migration note for the data table component (this might help refactoring from fluent to shadcn) ─────────────────────────────────
-// This mirrors `@/components/shared` DataTable's prop shape (ColumnDef,
-// ActionDef, search/toolbar/action props) on purpose. To roll it out on
-// another master-data page later:
-//   1. Swap the import: `DataTable` -> `ShadcnDataTable` (default export),
-//      and `type ColumnDef/ActionDef` from this file instead.
-//   2. If that page used `render`/`size` on actions, or FluentButton
-//      variants, adjust — this version only supports shadcn Button variants.
-//   3. If that page relied on `mobileWidth`/CSS-grid-specific sizing quirks
-//      from GridTable, sanity check the table's horizontal scroll on a
-//      real phone width, since this uses a plain <table> under the hood.
-//   4. Once ALL pages are migrated, the old DataTable/GridTable and their
-//      Fluent dependencies can be deleted.
+// Migration note: mirrors the shared DataTable prop shape so pages can swap
+// `DataTable` -> `ShadcnDataTable`. Only shadcn Button variants are supported,
+// and it renders a plain <table> (check mobile horizontal scroll).

@@ -18,7 +18,10 @@ export const ProgressBar = ({ value, className, tone = 'brand' }: ProgressBarPro
       aria-valuemax={100}
     >
       <div
-        className={cn('h-full rounded-full transition-[width]', tone === 'gold' ? 'bg-gold' : 'bg-brand')}
+        className={cn(
+          'h-full rounded-full transition-[width]',
+          tone === 'gold' ? 'bg-gold' : 'bg-brand',
+        )}
         style={{ width: `${pct}%` }}
       />
     </div>

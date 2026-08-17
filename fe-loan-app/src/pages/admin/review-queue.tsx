@@ -6,7 +6,7 @@ import type { LoanApplication } from '@/api/loan-applications/loan-applications.
 import { formatDate } from '@/utils/format'
 import { cn } from '@/lib/utils'
 import PageHeader from '@/components/page-header'
-import DataTable, { type ColumnDef, type ActionDef } from '@/components/shared'
+import { DataTable, type ColumnDef, type ActionDef } from '@/components/shared'
 import { Money } from '@/components/money/money'
 import { LoanStatusPill } from '@/components/status-pill'
 import { ErrorState } from '@/components/states'
@@ -72,7 +72,7 @@ export const ReviewQueuePage = () => {
               'rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
               status === filter.value
                 ? 'bg-brand text-white'
-                : 'bg-surface text-muted ring-1 ring-line hover:text-ink',
+                : 'bg-surface text-brand ring-1 ring-line hover:text-ink',
             )}
           >
             {filter.label}

@@ -100,7 +100,13 @@ export const LoanForm = ({
     ? { monthlyIncome: message }
     : {}
 
-  // Client-side rule: the loan amount must exceed one month's income.
+  const nameFromAccount = fields.find((field) => field.key === 'applicantName')?.isReadOnly
+  if (nameFromAccount && values.applicantName.trim().length === 0) {
+    fieldErrors.applicantName =
+      "We couldn't read your account name. Please refresh or sign in again."
+  }
+
+  // Loan amount must exceed one month's income.
   const amountBelowIncome = amount > 0 && income > 0 && amount < income
   const amountEqualsIncome = amount > 0 && income > 0 && amount === income
   if (amountBelowIncome) {
@@ -138,6 +144,8 @@ export const LoanForm = ({
           render={(field) => (
             <InputField
               key={field.key}
+              id={field.key}
+              name={field.key}
               label={field.label}
               fieldType={field.fieldType}
               value={values[field.key]}
@@ -166,7 +174,6 @@ export const LoanForm = ({
         </div>
       </div>
 
-      {/* Live estimate */}
       <aside className="h-fit rounded-xl border border-line bg-brand-tint/50 p-5">
         <p className="text-sm font-bold text-brand-deep">Estimated monthly payment</p>
         <p className="mt-1 font-heading text-3xl font-extrabold text-ink">

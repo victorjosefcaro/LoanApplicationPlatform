@@ -88,7 +88,7 @@ export const ComponentsGalleryPage = () => {
       <Section title="LoanLifecycle">
         {LIFECYCLE_STATES.map((s) => (
           <div key={s} className="rounded-xl border border-line p-4">
-            <p className="mb-3 text-xs font-medium text-muted uppercase">{s}</p>
+            <p className="mb-3 text-xs font-medium text-brand uppercase">{s}</p>
             <LoanLifecycle status={s} />
           </div>
         ))}
@@ -125,7 +125,7 @@ export const ComponentsGalleryPage = () => {
 
       <Section title="States">
         <div className="flex items-center gap-3">
-          <Spinner className="text-brand" /> <span className="text-sm text-muted">Loading…</span>
+          <Spinner className="text-brand" /> <span className="text-sm text-brand">Loading…</span>
         </div>
         <EmptyState title="Nothing here yet" message="Empty states invite the next action." />
         <ErrorState error={new Error('Treasury balance is temporarily unavailable.')} />

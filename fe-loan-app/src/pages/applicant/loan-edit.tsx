@@ -7,6 +7,7 @@ import PageHeader from '@/components/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { LoanForm } from '@/components/loan/loan-form'
 import { LoadingState, ErrorState, EmptyState } from '@/components/states'
+import { isNotFoundError, notFound } from '@/api/is-not-found-error'
 import { Button } from '@/components/ui/button'
 
 export const LoanEditPage = () => {
@@ -21,11 +22,13 @@ export const LoanEditPage = () => {
     update.mutate({ id, payload }, { onSuccess: () => navigate(`/loans/${id}`, { replace: true }) })
   }
 
+  if (!Number.isFinite(id)) throw notFound()
   if (loanQuery.isLoading) return <LoadingState label="Loading your application…" />
+  if (isNotFoundError(loanQuery.error)) throw notFound()
   if (loanQuery.isError) return <ErrorState error={loanQuery.error} onRetry={loanQuery.refetch} />
 
   const loan = loanQuery.data
-  if (!loan) return <EmptyState title="We couldn't find that application" />
+  if (!loan) throw notFound()
 
   if (!isEditableLoan(loan.status)) {
     return (

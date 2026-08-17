@@ -13,14 +13,13 @@ export type Terminal = {
 export type LifecycleView = {
   stages: LifecycleStage[]
   terminal: Terminal | null
-  /** A short nudge shown near the rail, e.g. for returned applications. */
+  /** Short nudge shown near the rail, e.g. for returned applications. */
   note: string | null
 }
 
-// The four API-driven stages the rail mirrors.
 const STAGE_LABELS = ['Submitted', 'Under review', 'Approved', 'Funds released'] as const
 
-// How far each status has progressed along the rail (index into STAGE_LABELS).
+// Index into STAGE_LABELS each status has reached.
 const REACHED_INDEX: Record<string, number> = {
   Submitted: 0,
   Returned: 0,
@@ -52,9 +51,7 @@ export const lifecycleView = (status: string): LifecycleView => {
   })
 
   const note =
-    status === 'Returned'
-      ? 'Returned for changes — update the details and resubmit.'
-      : null
+    status === 'Returned' ? 'Returned for changes — update the details and resubmit.' : null
 
   return { stages, terminal, note }
 }

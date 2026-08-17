@@ -9,7 +9,7 @@ export const useLogin = () =>
       try {
         localStorage.setItem(STORAGE_KEYS.AUTH.TOKEN, token)
       } catch {
-        // Ignore storage failures; the token is still returned to the caller.
+        // Ignore storage failures; token is still returned to the caller.
       }
     },
   })

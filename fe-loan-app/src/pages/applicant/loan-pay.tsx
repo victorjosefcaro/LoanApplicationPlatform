@@ -12,6 +12,7 @@ import { Money } from '@/components/money/money'
 import { ScheduleTable } from '@/components/payments/schedule-table'
 import ModalDialog from '@/components/shared/components/modal-dialog'
 import { LoadingState, ErrorState, EmptyState, InlineError } from '@/components/states'
+import { isNotFoundError, notFound } from '@/api/is-not-found-error'
 
 const remainingOf = (s: PaymentSchedule): number => Math.max(0, s.amountDue - s.amountPaid)
 
@@ -41,9 +42,11 @@ export const LoanPayPage = () => {
     )
   }
 
+  if (!Number.isFinite(id)) throw notFound()
   if (loanQuery.isLoading || schedulesQuery.isLoading) {
     return <LoadingState label="Loading your schedule…" />
   }
+  if (isNotFoundError(loanQuery.error)) throw notFound()
   if (loanQuery.isError) return <ErrorState error={loanQuery.error} onRetry={loanQuery.refetch} />
   if (schedulesQuery.isError) {
     return <ErrorState error={schedulesQuery.error} onRetry={schedulesQuery.refetch} />
@@ -55,7 +58,9 @@ export const LoanPayPage = () => {
     <div>
       <PageHeader
         title="Make a payment"
-        subtitle={loanQuery.data ? `${loanQuery.data.purpose} · application #${id}` : `Application #${id}`}
+        subtitle={
+          loanQuery.data ? `${loanQuery.data.purpose} · application #${id}` : `Application #${id}`
+        }
         actions={
           <Button variant="ghost" onClick={() => navigate(`/loans/${id}`)}>
             Back to application
@@ -78,7 +83,7 @@ export const LoanPayPage = () => {
               schedules={schedules}
               renderAction={(schedule) =>
                 schedule.status === 'Paid' ? (
-                  <span className="text-xs text-muted">Settled</span>
+                  <span className="text-xs text-brand">Settled</span>
                 ) : (
                   <Button size="sm" onClick={() => openPay(schedule)}>
                     Pay
@@ -94,7 +99,9 @@ export const LoanPayPage = () => {
         open={active !== null}
         onOpenChange={() => setActive(null)}
         title="Submit a payment"
-        desc={active ? `Installment due ${new Date(active.dueDate).toLocaleDateString()}` : undefined}
+        desc={
+          active ? `Installment due ${new Date(active.dueDate).toLocaleDateString()}` : undefined
+        }
         size="sm"
         actionButton={[
           {
@@ -130,7 +137,7 @@ export const LoanPayPage = () => {
             isRequired
           />
           {submit.isError && <InlineError error={submit.error} />}
-          <p className="text-xs text-muted">
+          <p className="text-xs text-brand">
             Your loan officer confirms the payment once it clears.
           </p>
         </div>

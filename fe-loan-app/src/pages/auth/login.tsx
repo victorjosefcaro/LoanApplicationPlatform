@@ -48,7 +48,7 @@ export const LoginPage = () => {
           value={username}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
           isRequired
-          size='xl'
+          size="xl"
           placeholder="johndoe"
         />
         <InputField
@@ -57,7 +57,7 @@ export const LoginPage = () => {
           value={password}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
           isRequired
-          size='xl'
+          size="xl"
           placeholder="Your password"
         />
 

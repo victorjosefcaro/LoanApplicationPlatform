@@ -1,6 +1,5 @@
-// The .NET backend signs tokens with ClaimTypes.NameIdentifier / ClaimTypes.Role,
-// which serialize to these schema-URI claim keys. There is no username claim,
-// so the display name is captured from the login form separately.
+// .NET serializes NameIdentifier/Role to these schema-URI claim keys.
+// No username claim — display name comes from the login form separately.
 const NAMEID_CLAIM = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'
 const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
 

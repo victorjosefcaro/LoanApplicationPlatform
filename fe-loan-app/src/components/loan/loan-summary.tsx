@@ -6,8 +6,8 @@ import { Money } from '@/components/money/money'
 
 const Fact = ({ label, children }: { label: string; children: ReactNode }) => (
   <div>
-    <dt className="text-xs font-medium tracking-wide text-muted uppercase">{label}</dt>
-    <dd className="mt-1 text-ink">{children}</dd>
+    <dt className="text-xs font-medium tracking-wide text-brand uppercase">{label}</dt>
+    <dd className="mt-1 text-black">{children}</dd>
   </div>
 )
 

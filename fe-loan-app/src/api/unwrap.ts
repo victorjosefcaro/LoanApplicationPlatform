@@ -22,8 +22,7 @@ export const unwrap = <T>(res: ApiResponse<ApiBodyResponse<T>>): T => {
   return body.data !== undefined ? body.data : (res.data as T)
 }
 
-// Paged endpoints return the items as the JSON body and the pagination
-// metadata in the `X-Pagination` response header.
+// Pagination metadata lives in the `X-Pagination` response header.
 export const parsePagination = (headers: Record<string, string>): PaginationMetadata | null => {
   const raw = headers['x-pagination']
   if (!raw) return null

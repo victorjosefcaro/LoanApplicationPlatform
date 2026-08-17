@@ -11,19 +11,16 @@ const PHP_WHOLE = new Intl.NumberFormat('en-PH', {
 })
 
 export type MoneyProps = {
-  /** Amount in PHP. `null`/`undefined` renders an em dash. */
+  /** Amount in PHP; null/undefined renders an em dash. */
   amount: number | null | undefined
-  /** Hide centavos when the value is whole. Default false (always 2 decimals). */
+  /** Hide centavos when the value is whole. */
   compact?: boolean
-  /** Show a leading + for positive values (useful for ledgers). Default false. */
+  /** Leading + for positive values. */
   signed?: boolean
   className?: string
 }
 
-/**
- * Renders a peso figure in IBM Plex Mono with tabular figures so columns of
- * money align. Every monetary value in Loanly should go through this.
- */
+// Peso figure in tabular-nums mono so money columns align.
 export const Money = ({ amount, compact = false, signed = false, className }: MoneyProps) => {
   const isMissing = amount === null || amount === undefined || Number.isNaN(amount)
 
@@ -38,10 +35,7 @@ export const Money = ({ amount, compact = false, signed = false, className }: Mo
   }
 
   return (
-    <span
-      className={cn('font-mono tabular-nums whitespace-nowrap', className)}
-      data-slot="money"
-    >
+    <span className={cn('font-mono tabular-nums whitespace-nowrap', className)} data-slot="money">
       {body}
     </span>
   )

@@ -12,6 +12,7 @@ import { Money } from '@/components/money/money'
 import { ScheduleTable } from '@/components/payments/schedule-table'
 import ModalDialog from '@/components/shared/components/modal-dialog'
 import { LoadingState, ErrorState, EmptyState, InlineError } from '@/components/states'
+import { isNotFoundError, notFound } from '@/api/is-not-found-error'
 
 const remainingOf = (s: PaymentSchedule): number => Math.max(0, s.amountDue - s.amountPaid)
 const defaultPost = (s: PaymentSchedule): number =>
@@ -43,7 +44,11 @@ export const AdminLoanPaymentsPage = () => {
     )
   }
 
-  if (loanQuery.isLoading || schedulesQuery.isLoading) return <LoadingState label="Loading payments…" />
+  if (!Number.isFinite(id)) throw notFound()
+  if (loanQuery.isLoading || schedulesQuery.isLoading) {
+    return <LoadingState label="Loading payments…" />
+  }
+  if (isNotFoundError(loanQuery.error)) throw notFound()
   if (loanQuery.isError) return <ErrorState error={loanQuery.error} onRetry={loanQuery.refetch} />
   if (schedulesQuery.isError) {
     return <ErrorState error={schedulesQuery.error} onRetry={schedulesQuery.refetch} />
@@ -55,7 +60,11 @@ export const AdminLoanPaymentsPage = () => {
     <div>
       <PageHeader
         title="Post payments"
-        subtitle={loanQuery.data ? `${loanQuery.data.applicantName} · application #${id}` : `Application #${id}`}
+        subtitle={
+          loanQuery.data
+            ? `${loanQuery.data.applicantName} · application #${id}`
+            : `Application #${id}`
+        }
         actions={
           <Button variant="ghost" onClick={() => navigate(`/admin/loans/${id}`)}>
             Back to application
@@ -78,7 +87,7 @@ export const AdminLoanPaymentsPage = () => {
               schedules={schedules}
               renderAction={(schedule) =>
                 schedule.status === 'Paid' ? (
-                  <span className="text-xs text-muted">Settled</span>
+                  <span className="text-xs text-brand">Settled</span>
                 ) : (
                   <Button
                     size="sm"
@@ -98,7 +107,9 @@ export const AdminLoanPaymentsPage = () => {
         open={active !== null}
         onOpenChange={() => setActive(null)}
         title="Post a payment"
-        desc={active ? `Installment due ${new Date(active.dueDate).toLocaleDateString()}` : undefined}
+        desc={
+          active ? `Installment due ${new Date(active.dueDate).toLocaleDateString()}` : undefined
+        }
         size="sm"
         actionButton={[
           {

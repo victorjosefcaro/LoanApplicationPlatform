@@ -19,7 +19,8 @@ import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
 import { LoanSummary } from '@/components/loan/loan-summary'
 import { HistoryTimeline } from '@/components/loan/history-timeline'
 import { Money } from '@/components/money/money'
-import { LoadingState, ErrorState, EmptyState, InlineError } from '@/components/states'
+import { LoadingState, ErrorState, InlineError } from '@/components/states'
+import { isNotFoundError, notFound } from '@/api/is-not-found-error'
 
 export const AdminLoanReviewPage = () => {
   const params = useParams()
@@ -35,22 +36,13 @@ export const AdminLoanReviewPage = () => {
 
   const [remarks, setRemarks] = useState('')
 
+  if (!Number.isFinite(id)) throw notFound()
   if (loanQuery.isLoading) return <LoadingState label="Loading application…" />
+  if (isNotFoundError(loanQuery.error)) throw notFound()
   if (loanQuery.isError) return <ErrorState error={loanQuery.error} onRetry={loanQuery.refetch} />
 
   const loan = loanQuery.data
-  if (!loan) {
-    return (
-      <EmptyState
-        title="Application not found"
-        action={
-          <Button variant="outline" onClick={() => navigate('/admin')}>
-            Back to queue
-          </Button>
-        }
-      />
-    )
-  }
+  if (!loan) throw notFound()
 
   const role = user?.role
   const canReview = role === ROLES.REVIEWER || role === ROLES.ADMIN
@@ -100,21 +92,23 @@ export const AdminLoanReviewPage = () => {
     if (loan.status === 'Approved') {
       return (
         <div className="space-y-3">
-          <p className="text-sm text-muted">
+          <p className="text-sm text-brand">
             Releasing moves <Money amount={loan.amount} /> from Treasury to the applicant. This
             starts their repayment schedule.
           </p>
-          {!canRelease && (
-            <p className="text-sm text-coral">Only an admin can release funds.</p>
-          )}
-          <Button variant="gold" disabled={!canRelease || pending} onClick={() => release.mutate(id)}>
+          {!canRelease && <p className="text-sm text-coral">Only an admin can release funds.</p>}
+          <Button
+            variant="gold"
+            disabled={!canRelease || pending}
+            onClick={() => release.mutate(id)}
+          >
             {release.isPending ? 'Releasing…' : 'Release funds'}
           </Button>
         </div>
       )
     }
     return (
-      <p className="text-sm text-muted">
+      <p className="text-sm text-brand">
         No action needed — this application is {loan.status.toLowerCase()}.
       </p>
     )
@@ -168,7 +162,7 @@ export const AdminLoanReviewPage = () => {
             <CardTitle>History</CardTitle>
           </CardHeader>
           <CardContent>
-            {historyQuery.isLoading && <p className="text-sm text-muted">Loading…</p>}
+            {historyQuery.isLoading && <p className="text-sm text-brand">Loading…</p>}
             {historyQuery.isError && (
               <ErrorState error={historyQuery.error} onRetry={historyQuery.refetch} />
             )}
@@ -204,7 +198,7 @@ const DecisionBlock = ({
   danger: DecisionAction
 }) => (
   <div className="space-y-3">
-    <p className="text-sm text-muted">{note}</p>
+    <p className="text-sm text-brand">{note}</p>
     {disabled ? (
       <p className="text-sm text-coral">{disabledNote}</p>
     ) : (

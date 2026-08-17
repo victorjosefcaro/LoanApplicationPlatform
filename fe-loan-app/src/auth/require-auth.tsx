@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth, homePathForRole } from './auth-context'
+import { UnauthorizedPage } from '@/pages/unauthorized'
 
 type RequireAuthProps = {
   /** If set, the user's role must be one of these. Otherwise any signed-in user. */
@@ -18,7 +19,7 @@ export const RequireAuth = ({ roles, children }: RequireAuthProps) => {
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to={homePathForRole(user.role)} replace />
+    return <UnauthorizedPage />
   }
 
   return <>{children}</>

@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useId, useRef, useState } from 'react'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 
 import { cn } from '@/lib/utils'
@@ -19,6 +19,8 @@ type IInputFieldOption = {
 }
 
 type IInputField = {
+  id?: string
+  name?: string
   label?: string
   labelStyle?: string
   fieldType?: 'text' | 'email' | 'password' | 'number' | 'select' | string
@@ -45,6 +47,8 @@ const SIZE: Record<NonNullable<IInputField['size']>, string> = {
 }
 
 const InputField = ({
+  id,
+  name,
   label,
   labelStyle,
   fieldType = 'text',
@@ -62,6 +66,9 @@ const InputField = ({
   max,
   errorMessage,
 }: IInputField) => {
+  const reactId = useId()
+  const fieldId = id ?? reactId
+
   const [showPassword, setShowPassword] = useState(false)
 
   const [numberText, setNumberText] = useState(value ?? '')
@@ -90,20 +97,22 @@ const InputField = ({
   return (
     <div className="flex w-full flex-col gap-1">
       {label && (
-        <div className={`${labelStyle}`}>
+        <label htmlFor={fieldId} className={cn('block', labelStyle)}>
           <span className="font-semibold text-lg">{label}</span>{' '}
           {isRequired && <span className="text-destructive">*</span>}
-        </div>
+        </label>
       )}
 
       {isSelect && (
         <Select
           items={options ?? []}
+          name={name}
           value={value}
           onValueChange={(next: string | null) => onValueChange?.(next ?? '')}
           disabled={disabled}
         >
           <SelectTrigger
+            id={fieldId}
             className={cn(sizeClass, 'w-full bg-white', inputStyle)}
             aria-invalid={!!errorMessage}
           >
@@ -125,6 +134,8 @@ const InputField = ({
       {isPassword && (
         <div className="relative inline-block">
           <Input
+            id={fieldId}
+            name={name}
             type={showPassword ? 'text' : 'password'}
             className={cn(sizeClass, 'pr-9', inputStyle)}
             onChange={onChange}
@@ -148,6 +159,8 @@ const InputField = ({
 
       {isNumber && (
         <Input
+          id={fieldId}
+          name={name}
           type="text"
           inputMode="decimal"
           className={cn(sizeClass, inputStyle)}
@@ -163,7 +176,6 @@ const InputField = ({
           required={isRequired}
           readOnly={readOnly ?? !onChange}
           disabled={disabled}
-          min={0}
           placeholder={placeholder}
           aria-invalid={!!errorMessage}
         />
@@ -171,6 +183,8 @@ const InputField = ({
 
       {!isPassword && !isNumber && !isSelect && (
         <Input
+          id={fieldId}
+          name={name}
           type={fieldType}
           className={cn(sizeClass, inputStyle)}
           onChange={onChange}

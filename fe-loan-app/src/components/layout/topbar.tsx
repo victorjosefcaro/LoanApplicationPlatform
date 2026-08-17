@@ -28,7 +28,8 @@ export const Topbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
       <div className="min-w-0">
         <p className="truncate text-sm text-black">
-          {greeting()}, <span className="font-bold text-black">{displayFirstName(user?.username)}</span>
+          {greeting()},{' '}
+          <span className="font-bold text-black">{displayFirstName(user?.username)}</span>
         </p>
       </div>
 

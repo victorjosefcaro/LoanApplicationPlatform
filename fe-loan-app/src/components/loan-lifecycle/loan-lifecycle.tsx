@@ -6,13 +6,13 @@ import { lifecycleView, type LifecycleStage, type NodeState } from './lifecycle'
 const NODE_CLASS: Record<NodeState, string> = {
   done: 'bg-brand text-white border-brand',
   current: 'bg-surface text-brand-deep border-brand ring-4 ring-gold/60',
-  upcoming: 'bg-surface text-muted border-line',
+  upcoming: 'bg-surface text-black border-line',
 }
 
 const LABEL_CLASS: Record<NodeState, string> = {
   done: 'text-ink',
   current: 'text-ink font-semibold',
-  upcoming: 'text-muted',
+  upcoming: 'text-black',
 }
 
 const Node = ({ stage, index }: { stage: LifecycleStage; index: number }) => (
@@ -44,21 +44,13 @@ export type LoanLifecycleProps = {
   className?: string
 }
 
-/**
- * The signature Loanly rail: Submitted → Under review → Approved → Funds
- * released, with done / current (ringed in gold) / upcoming node states.
- * Reused on the applicant dashboard and the admin review screen.
- */
 export const LoanLifecycle = ({ status, className }: LoanLifecycleProps) => {
   const { stages, terminal, note } = lifecycleView(status)
 
   return (
     <div className={cn('space-y-3', className)}>
       <ol
-        className={cn(
-          'flex items-start overflow-x-auto pb-1',
-          terminal && 'opacity-50',
-        )}
+        className={cn('flex items-start overflow-x-auto py-2', terminal && 'opacity-50')}
         aria-label={`Loan status: ${status}`}
       >
         {stages.map((stage, index) => (
@@ -73,9 +65,7 @@ export const LoanLifecycle = ({ status, className }: LoanLifecycleProps) => {
         <div
           className={cn(
             'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium',
-            terminal.kind === 'rejected'
-              ? 'bg-coral/10 text-coral'
-              : 'bg-line text-muted',
+            terminal.kind === 'rejected' ? 'bg-coral/10 text-coral' : 'bg-line text-black',
           )}
         >
           {terminal.kind === 'rejected' ? (
@@ -88,9 +78,7 @@ export const LoanLifecycle = ({ status, className }: LoanLifecycleProps) => {
       )}
 
       {note && (
-        <div className="rounded-lg bg-gold-tint px-3 py-2 text-sm font-medium text-ink">
-          {note}
-        </div>
+        <div className="rounded-lg bg-gold-tint px-3 py-2 text-sm font-medium text-ink">{note}</div>
       )}
     </div>
   )

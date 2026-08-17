@@ -115,20 +115,17 @@ namespace LoanApplicationPlatform.API.Services
             return (history, false, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> UpdateApplicationAsync(int id, int userId, LoanApplicationForUpdateDto dto)
-        {
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> UpdateApplicationAsync(int id, int userId, LoanApplicationForUpdateDto dto) {
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return (false, "Application not found.", true, false);
 
             if (application.ApplicantId != userId) return (false, "Access denied.", false, true);
 
-            if (application.Status != LoanStatus.Returned)
-            {
+            if (application.Status != LoanStatus.Returned) {
                 return (false, "Can only update and resubmit applications in Returned status.", false, false);
             }
 
-            if (dto.TermInMonths > 0)
-            {
+            if (dto.TermInMonths > 0) {
                 decimal estimatedMonthlyPayment = dto.Amount / dto.TermInMonths;
                 if (estimatedMonthlyPayment > dto.MonthlyIncome)
                 {

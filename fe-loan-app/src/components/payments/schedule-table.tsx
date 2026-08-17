@@ -38,12 +38,12 @@ export const ScheduleTable = ({ schedules, renderAction }: ScheduleTableProps) =
       <TableBody>
         {ordered.map((schedule, index) => (
           <TableRow key={schedule.id}>
-            <TableCell className="text-muted">{index + 1}</TableCell>
+            <TableCell className="text-brand">{index + 1}</TableCell>
             <TableCell>{formatDate(schedule.dueDate)}</TableCell>
             <TableCell className="text-right">
               <Money amount={schedule.amountDue} />
             </TableCell>
-            <TableCell className="text-right text-muted">
+            <TableCell className="text-right text-brand">
               <Money amount={schedule.amountPaid} />
             </TableCell>
             <TableCell>

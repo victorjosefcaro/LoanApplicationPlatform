@@ -106,6 +106,25 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+
+	// Open the Swagger UI in the default browser once the server is listening.
+	// `dotnet run` ignores launchSettings' `launchBrowser`, so we do it here.
+	app.Lifetime.ApplicationStarted.Register(() =>
+	{
+		var address = app.Services
+			.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>()
+			.Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()
+			?.Addresses.FirstOrDefault();
+
+		if (string.IsNullOrEmpty(address)) return;
+
+		var url = $"{address.Replace("://+", "://localhost").Replace("://[::]", "://localhost").Replace("://0.0.0.0", "://localhost")}/swagger";
+		try
+		{
+			System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+		}
+		catch { /* opening the browser is best-effort; ignore failures */ }
+	});
 }
 
 app.UseCors(FrontendCorsPolicy);

@@ -26,16 +26,20 @@ export const HistoryTimeline = ({ items }: { items: LoanApplicationStatusHistory
               className={`mt-1 size-2.5 rounded-full ${index === 0 ? 'bg-brand' : 'bg-line'}`}
               aria-hidden="true"
             />
-            {index < ordered.length - 1 && <span className="w-px flex-1 bg-line" aria-hidden="true" />}
+            {index < ordered.length - 1 && (
+              <span className="w-px flex-1 bg-line" aria-hidden="true" />
+            )}
           </div>
           <div className="flex-1 pb-1">
             <div className="flex flex-wrap items-center gap-2">
               <LoanStatusPill status={entry.newStatus} />
-              <span className="text-xs text-muted">{formatDateTime(entry.changedAt)}</span>
+              <span className="text-xs text-black">{formatDateTime(entry.changedAt)}</span>
             </div>
             {entry.remarks && <p className="mt-1 text-sm text-ink">{entry.remarks}</p>}
             {entry.changedByUsername && (
-              <p className="mt-0.5 text-xs text-muted">by {entry.changedByUsername}</p>
+              <p className="mt-0.5 text-xs text-black">
+                by <span className="text-brand">{entry.changedByUsername}</span>
+              </p>
             )}
           </div>
         </li>
