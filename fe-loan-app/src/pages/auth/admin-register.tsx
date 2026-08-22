@@ -4,7 +4,7 @@ import { useRegisterAdminUser } from '@/api/auth/auth.mutations'
 import { ROLES } from '@/constants'
 import PageHeader from '@/components/page-header'
 import InputField from '@/components/shared/components/input-field'
-import { Card, CardContent } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { Button } from '@/components/ui/button'
 import { Spinner, InlineError } from '@/components/states'
 
@@ -52,8 +52,8 @@ export const AdminRegisterPage = () => {
         </div>
       )}
 
-      <Card>
-        <CardContent>
+      <Card
+        content={
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <InputField
               label="Username"
@@ -88,8 +88,8 @@ export const AdminRegisterPage = () => {
               {registerAdmin.isPending ? <Spinner className="size-4" /> : 'Create account'}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        }
+      />
     </div>
   )
 }

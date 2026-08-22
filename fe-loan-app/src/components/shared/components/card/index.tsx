@@ -11,9 +11,9 @@ type ICard = {
 const Card = ({ title, action, content, contentClassName }: ICard) => (
   <CardUI>
     {title && (
-      <CardHeader className={action ? 'flex-row items-center justify-between' : undefined}>
+      <CardHeader className={action ? 'flex flex-col items-start' : undefined}>
         <CardTitle>{title}</CardTitle>
-        {action}
+       <span> {action}</span>
       </CardHeader>
     )}
     <CardContent className={contentClassName}>{content}</CardContent>

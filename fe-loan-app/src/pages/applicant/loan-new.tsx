@@ -3,7 +3,7 @@ import { useCreateLoanApplication } from '@/api/loan-applications/loan-applicati
 import type { LoanApplicationCreateRequest } from '@/api/loan-applications/loan-applications.types'
 import { useAuth } from '@/auth/auth-context'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { LoanForm } from '@/components/loan/loan-form'
 
 export const LoanNewPage = () => {
@@ -23,8 +23,8 @@ export const LoanNewPage = () => {
         title="Apply for a loan"
         subtitle="Tell us what you need. You'll see an estimate as you go."
       />
-      <Card>
-        <CardContent>
+      <Card
+        content={
           <LoanForm
             initial={{ applicantName: user?.username ?? '' }}
             submitLabel="Submit application"
@@ -33,8 +33,8 @@ export const LoanNewPage = () => {
             onSubmit={handleSubmit}
             onCancel={() => navigate('/loans')}
           />
-        </CardContent>
-      </Card>
+        }
+      />
     </div>
   )
 }

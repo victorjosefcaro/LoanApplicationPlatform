@@ -4,7 +4,7 @@ import { useUpdateLoanApplication } from '@/api/loan-applications/loan-applicati
 import type { LoanApplicationCreateRequest } from '@/api/loan-applications/loan-applications.types'
 import { isEditableLoan } from '@/constants'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { LoanForm } from '@/components/loan/loan-form'
 import { LoadingState, ErrorState, EmptyState } from '@/components/states'
 import { isNotFoundError, notFound } from '@/api/is-not-found-error'
@@ -47,8 +47,8 @@ export const LoanEditPage = () => {
   return (
     <div>
       <PageHeader title="Edit application" subtitle="Update the details and resubmit." />
-      <Card>
-        <CardContent>
+      <Card
+        content={
           <LoanForm
             initial={{
               applicantName: loan.applicantName,
@@ -63,8 +63,8 @@ export const LoanEditPage = () => {
             onSubmit={handleSubmit}
             onCancel={() => navigate(`/loans/${id}`)}
           />
-        </CardContent>
-      </Card>
+        }
+      />
     </div>
   )
 }

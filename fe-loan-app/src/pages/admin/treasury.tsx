@@ -6,7 +6,7 @@ import { ROLES } from '@/constants'
 import { useAuth } from '@/auth/auth-context'
 import { formatDateTime } from '@/utils/format'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { Button } from '@/components/ui/button'
 import InputField from '@/components/shared/components/input-field'
 import { Money } from '@/components/money/money'
@@ -27,11 +27,9 @@ const DepositForm = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add funds</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card
+      title="Add funds"
+      content={
         <form onSubmit={handleSubmit} className="space-y-3" noValidate>
           <InputField
             label="Deposit amount (₱)"
@@ -53,8 +51,8 @@ const DepositForm = () => {
             {deposit.isPending ? 'Depositing…' : 'Deposit'}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      }
+    />
   )
 }
 
@@ -114,32 +112,25 @@ export const TreasuryPage = () => {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Available balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {balanceQuery.isLoading && <LoadingState label="Loading balance…" />}
-              {balanceQuery.isError && (
-                <ErrorState error={balanceQuery.error} onRetry={balanceQuery.refetch} />
-              )}
-              {balanceQuery.data && (
-                <p className="font-heading text-4xl font-extrabold text-ink">
-                  <Money amount={balanceQuery.data.balance} />
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <Card
+            title="Available balance"
+            content={
+              <>
+                {balanceQuery.isLoading && <LoadingState label="Loading balance…" />}
+                {balanceQuery.isError && (
+                  <ErrorState error={balanceQuery.error} onRetry={balanceQuery.refetch} />
+                )}
+                {balanceQuery.data && (
+                  <p className="font-heading text-4xl font-extrabold text-ink">
+                    <Money amount={balanceQuery.data.balance} />
+                  </p>
+                )}
+              </>
+            }
+          />
 
           {isAdmin ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TransactionsLedger />
-              </CardContent>
-            </Card>
+            <Card title="Transactions" content={<TransactionsLedger />} />
           ) : (
             <p className="text-sm text-brand">
               Only admins can deposit funds or view the transaction ledger.

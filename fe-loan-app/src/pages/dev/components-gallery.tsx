@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { Logo } from '@/components/brand/logo'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { Money } from '@/components/money/money'
 import { LoanStatusPill, PaymentStatusPill } from '@/components/status-pill'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
@@ -10,12 +10,7 @@ import { EmptyState, ErrorState, Spinner } from '@/components/states'
 import InputField from '@/components/shared/components/input-field'
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>{title}</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">{children}</CardContent>
-  </Card>
+  <Card title={title} contentClassName="space-y-4" content={children} />
 )
 
 const LOAN_STATUSES = [

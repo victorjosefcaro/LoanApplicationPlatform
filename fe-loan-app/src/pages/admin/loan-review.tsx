@@ -12,7 +12,7 @@ import {
 import { ROLES } from '@/constants'
 import { useAuth } from '@/auth/auth-context'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
@@ -128,47 +128,34 @@ export const AdminLoanReviewPage = () => {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LoanLifecycle status={loan.status} />
-            </CardContent>
-          </Card>
+          <Card title="Status" content={<LoanLifecycle status={loan.status} />} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Application</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LoanSummary loan={loan} />
-            </CardContent>
-          </Card>
+          <Card title="Application" content={<LoanSummary loan={loan} />} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Decision</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {renderDecision()}
-              {hasError && <InlineError error={actionError} />}
-            </CardContent>
-          </Card>
+          <Card
+            title="Decision"
+            contentClassName="space-y-3"
+            content={
+              <>
+                {renderDecision()}
+                {hasError && <InlineError error={actionError} />}
+              </>
+            }
+          />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {historyQuery.isLoading && <p className="text-sm text-brand">Loading…</p>}
-            {historyQuery.isError && (
-              <ErrorState error={historyQuery.error} onRetry={historyQuery.refetch} />
-            )}
-            {historyQuery.data && <HistoryTimeline items={historyQuery.data} />}
-          </CardContent>
-        </Card>
+        <Card
+          title="History"
+          content={
+            <>
+              {historyQuery.isLoading && <p className="text-sm text-brand">Loading…</p>}
+              {historyQuery.isError && (
+                <ErrorState error={historyQuery.error} onRetry={historyQuery.refetch} />
+              )}
+              {historyQuery.data && <HistoryTimeline items={historyQuery.data} />}
+            </>
+          }
+        />
       </div>
     </div>
   )

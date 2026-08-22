@@ -5,7 +5,7 @@ import { usePaymentSchedules } from '@/api/payments/payments.queries'
 import { useSubmitPayment } from '@/api/payments/payments.mutations'
 import type { PaymentSchedule } from '@/api/payments/payments.types'
 import PageHeader from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Card from '@/components/shared/components/card'
 import { Button } from '@/components/ui/button'
 import InputField from '@/components/shared/components/input-field'
 import { Money } from '@/components/money/money'
@@ -68,12 +68,10 @@ export const LoanPayPage = () => {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment schedule</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {schedules.length === 0 ? (
+      <Card
+        title="Payment schedule"
+        content={
+          schedules.length === 0 ? (
             <EmptyState
               title="No schedule yet"
               message="Your amortization schedule appears once funds are released."
@@ -91,9 +89,9 @@ export const LoanPayPage = () => {
                 )
               }
             />
-          )}
-        </CardContent>
-      </Card>
+          )
+        }
+      />
 
       <ModalDialog
         open={active !== null}
