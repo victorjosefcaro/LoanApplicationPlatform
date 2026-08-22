@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoMapper;
 using LoanApplicationPlatform.API.Constants;
 using LoanApplicationPlatform.API.DbContexts;
@@ -15,6 +16,7 @@ namespace LoanApplicationPlatform.API.Services
         private readonly ITreasuryRepository _treasuryRepository;
         private readonly IMapper _mapper;
         private readonly LoanApplicationPlatformContext _context;
+        private static readonly CultureInfo PesoCulture = CultureInfo.GetCultureInfo("en-PH");
 
         public LoanApplicationService(
             ILoanApplicationRepository loanRepository,
@@ -65,7 +67,7 @@ namespace LoanApplicationPlatform.API.Services
                 decimal estimatedMonthlyPayment = dto.Amount / dto.TermInMonths;
                 if (estimatedMonthlyPayment > dto.MonthlyIncome)
                 {
-                    return (null, $"Submission rejected: Your monthly income ({dto.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.");
+                    return (null, $"Submission rejected: Your monthly income of {dto.MonthlyIncome.ToString("C", PesoCulture)} is insufficient for the estimated monthly payment of {estimatedMonthlyPayment.ToString("C", PesoCulture)}.");
                 }
             }
 
@@ -113,24 +115,21 @@ namespace LoanApplicationPlatform.API.Services
             return (history, false, false);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> UpdateApplicationAsync(int id, int userId, LoanApplicationForUpdateDto dto)
-        {
+        public async Task<(bool Success, string? ErrorMessage, bool NotFound, bool Forbid)> UpdateApplicationAsync(int id, int userId, LoanApplicationForUpdateDto dto) {
             var application = await _loanRepository.GetLoanApplicationAsync(id);
             if (application == null) return (false, "Application not found.", true, false);
 
             if (application.ApplicantId != userId) return (false, "Access denied.", false, true);
 
-            if (application.Status != LoanStatus.Returned)
-            {
+            if (application.Status != LoanStatus.Returned) {
                 return (false, "Can only update and resubmit applications in Returned status.", false, false);
             }
 
-            if (dto.TermInMonths > 0)
-            {
+            if (dto.TermInMonths > 0) {
                 decimal estimatedMonthlyPayment = dto.Amount / dto.TermInMonths;
                 if (estimatedMonthlyPayment > dto.MonthlyIncome)
                 {
-                    return (false, $"Resubmission rejected: Your monthly income ({dto.MonthlyIncome:C}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment:C}.", false, false);
+                    return (false, $"Resubmission rejected: Your monthly income ({dto.MonthlyIncome.ToString("C", PesoCulture)}) is insufficient for the estimated monthly payment of {estimatedMonthlyPayment.ToString("C", PesoCulture)}.", false, false);
                 }
             }
 
