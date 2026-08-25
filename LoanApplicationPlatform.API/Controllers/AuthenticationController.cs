@@ -19,10 +19,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<string>> Authenticate(LoginRequestDto loginRequest)
         {
-            var token = await _authService.AuthenticateAsync(loginRequest);
+            var (token, errorMessage) = await _authService.AuthenticateAsync(loginRequest);
             if (token == null)
             {
-                return Unauthorized("Invalid username or password.");
+                return Unauthorized(errorMessage ?? "Invalid username or password.");
             }
 
             return Ok(token);
@@ -40,9 +40,10 @@ namespace LoanApplicationPlatform.API.Controllers
 
             return Ok();
         }
+
         [HttpPost("admin/register")]
-		[Authorize(Roles = "Admin")]
-		public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
         {
             var (success, errorMessage) = await _authService.RegisterAdminUserAsync(requestBody);
             if (!success)

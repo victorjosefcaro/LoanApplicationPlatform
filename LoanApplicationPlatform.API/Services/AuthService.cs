@@ -26,19 +26,22 @@ namespace LoanApplicationPlatform.API.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<string?> AuthenticateAsync(LoginRequestDto loginRequest)
+        public async Task<(string? Token, string? ErrorMessage)> AuthenticateAsync(LoginRequestDto loginRequest)
         {
             if (string.IsNullOrWhiteSpace(loginRequest.Username) || string.IsNullOrWhiteSpace(loginRequest.Password))
             {
-                return null;
+                return (null, "Username and Password are required.");
             }
 
             var user = await _userRepository.GetByUsernameAsync(loginRequest.Username, ignoreQueryFilters: true);
-            if (user == null 
-                || !string.Equals(user.Username, loginRequest.Username, StringComparison.Ordinal)
-                || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
+            if (user == null || !string.Equals(user.Username, loginRequest.Username, StringComparison.Ordinal))
             {
-                return null;
+                return (null, "Invalid username or password.");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
+            {
+                return (null, "Invalid Password.");
             }
 
             var securityKey = new SymmetricSecurityKey(
@@ -61,7 +64,7 @@ namespace LoanApplicationPlatform.API.Services
                 DateTime.UtcNow.AddHours(2),
                 signingCredentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            return (new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken), null);
         }
 
         public async Task<(bool Success, string? ErrorMessage)> RegisterApplicantAsync(LoginRequestDto requestBody)
@@ -69,6 +72,18 @@ namespace LoanApplicationPlatform.API.Services
             if (string.IsNullOrWhiteSpace(requestBody.Username) || string.IsNullOrWhiteSpace(requestBody.Password))
             {
                 return (false, "Username and Password are required.");
+            }
+
+            var (isUsernameValid, usernameError) = ValidateUsername(requestBody.Username);
+            if (!isUsernameValid)
+            {
+                return (false, usernameError);
+            }
+
+            var (isPasswordValid, passwordError) = ValidatePassword(requestBody.Password);
+            if (!isPasswordValid)
+            {
+                return (false, passwordError);
             }
 
             var tenantId = requestBody.TenantId ?? 1;
@@ -104,6 +119,18 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Username, Password, and Role are required.");
             }
 
+            var (isUsernameValid, usernameError) = ValidateUsername(requestBody.Username);
+            if (!isUsernameValid)
+            {
+                return (false, usernameError);
+            }
+
+            var (isPasswordValid, passwordError) = ValidatePassword(requestBody.Password);
+            if (!isPasswordValid)
+            {
+                return (false, passwordError);
+            }
+
             var validRoles = new[] { "Applicant", "Reviewer", "Approver", "Admin" };
             if (!validRoles.Contains(requestBody.Role))
             {
@@ -132,6 +159,68 @@ namespace LoanApplicationPlatform.API.Services
 
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();
+
+            return (true, null);
+        }
+
+        private static (bool IsValid, string? ErrorMessage) ValidateUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+            {
+                return (false, "Username must be at least 3 characters long.");
+            }
+
+            if (username.Length > 50)
+            {
+                return (false, "Username cannot exceed 50 characters.");
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9]+$"))
+            {
+                return (false, "Username can only contain alphanumeric characters (letters and numbers).");
+            }
+
+            return (true, null);
+        }
+
+        private static (bool IsValid, string? ErrorMessage) ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                return (false, "Password is required.");
+            }
+
+            var missingRequirements = new List<string>();
+
+            if (password.Length < 8)
+            {
+                missingRequirements.Add("be at least 8 characters long");
+            }
+
+            if (!password.Any(char.IsUpper))
+            {
+                missingRequirements.Add("contain at least one uppercase letter");
+            }
+
+            if (!password.Any(char.IsLower))
+            {
+                missingRequirements.Add("contain at least one lowercase letter");
+            }
+
+            if (!password.Any(char.IsDigit))
+            {
+                missingRequirements.Add("contain at least one number");
+            }
+
+            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+            {
+                missingRequirements.Add("contain at least one special character");
+            }
+
+            if (missingRequirements.Count > 0)
+            {
+                return (false, $"Password must {string.Join(", ", missingRequirements)}.");
+            }
 
             return (true, null);
         }
