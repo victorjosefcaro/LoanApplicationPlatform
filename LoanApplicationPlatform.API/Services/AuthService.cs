@@ -26,17 +26,22 @@ namespace LoanApplicationPlatform.API.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<string?> AuthenticateAsync(LoginRequestDto loginRequest)
+        public async Task<(string? Token, string? ErrorMessage)> AuthenticateAsync(LoginRequestDto loginRequest)
         {
             if (string.IsNullOrWhiteSpace(loginRequest.Username) || string.IsNullOrWhiteSpace(loginRequest.Password))
             {
-                return null;
+                return (null, "Username and Password are required.");
             }
 
             var user = await _userRepository.GetByUsernameAsync(loginRequest.Username, ignoreQueryFilters: true);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
+            if (user == null)
             {
-                return null;
+                return (null, "Invalid username or password.");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
+            {
+                return (null, "Invalid Password.");
             }
 
             var securityKey = new SymmetricSecurityKey(
@@ -59,7 +64,7 @@ namespace LoanApplicationPlatform.API.Services
                 DateTime.UtcNow.AddHours(2),
                 signingCredentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            return (new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken), null);
         }
 
         public async Task<(bool Success, string? ErrorMessage)> RegisterApplicantAsync(LoginRequestDto requestBody)
