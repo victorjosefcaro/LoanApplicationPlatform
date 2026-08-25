@@ -209,55 +209,59 @@ namespace LoanApplicationPlatform.API.Services
 
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> ReleaseFundsAsync(int id, int changedByUserId)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC sp_getapplock @Resource = N'LoanApplicationPlatform.Treasury', @LockMode = N'Exclusive', @LockOwner = N'Transaction';");
-
-            var application = await _loanRepository.GetLoanApplicationAsync(id);
-            if (application == null) return (false, "Application not found.", true);
-
-            if (application.Status != LoanStatus.Approved)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                return (false, "Can only release funds for approved applications.", false);
-            }
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await _context.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_getapplock @Resource = N'LoanApplicationPlatform.Treasury', @LockMode = N'Exclusive', @LockOwner = N'Transaction';");
 
-            var treasury = await _treasuryRepository.GetTreasuryAsync();
-            if (treasury == null || treasury.Balance < application.Amount)
-            {
-                return (false, "Insufficient treasury funds to release this loan.", false);
-            }
+                var application = await _loanRepository.GetLoanApplicationAsync(id);
+                if (application == null) return (false, "Application not found.", true);
 
-            treasury.Balance -= application.Amount;
-
-            _treasuryRepository.AddTreasuryTransaction(new TreasuryTransaction
-            {
-                Amount = -application.Amount,
-                TransactionDate = DateTime.UtcNow,
-                Type = "FundRelease",
-                ReferenceId = application.Id
-            });
-
-            decimal totalAmountOwed = application.Amount + (application.Amount * application.InterestRate);
-            decimal monthlyAmount = totalAmountOwed / application.TermInMonths;
-
-            for (int i = 1; i <= application.TermInMonths; i++)
-            {
-                _loanRepository.AddPaymentSchedule(new PaymentSchedule
+                if (application.Status != LoanStatus.Approved)
                 {
-                    LoanApplicationId = application.Id,
-                    DueDate = DateTime.UtcNow.AddMonths(i),
-                    AmountDue = monthlyAmount,
-                    AmountPaid = 0,
-                    Status = PaymentStatus.Pending
+                    return (false, "Can only release funds for approved applications.", false);
+                }
+
+                var treasury = await _treasuryRepository.GetTreasuryAsync();
+                if (treasury == null || treasury.Balance < application.Amount)
+                {
+                    return (false, "Insufficient treasury funds to release this loan.", false);
+                }
+
+                treasury.Balance -= application.Amount;
+
+                _treasuryRepository.AddTreasuryTransaction(new TreasuryTransaction
+                {
+                    Amount = -application.Amount,
+                    TransactionDate = DateTime.UtcNow,
+                    Type = "FundRelease",
+                    ReferenceId = application.Id
                 });
-            }
 
-            AddStatusHistory(application, application.Status, LoanStatus.Released, application.Remarks, changedByUserId);
-            application.Status = LoanStatus.Released;
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+                decimal totalAmountOwed = application.Amount + (application.Amount * application.InterestRate);
+                decimal monthlyAmount = totalAmountOwed / application.TermInMonths;
 
-            return (true, null, false);
+                for (int i = 1; i <= application.TermInMonths; i++)
+                {
+                    _loanRepository.AddPaymentSchedule(new PaymentSchedule
+                    {
+                        LoanApplicationId = application.Id,
+                        DueDate = DateTime.UtcNow.AddMonths(i),
+                        AmountDue = monthlyAmount,
+                        AmountPaid = 0,
+                        Status = PaymentStatus.Pending
+                    });
+                }
+
+                AddStatusHistory(application, application.Status, LoanStatus.Released, application.Remarks, changedByUserId);
+                application.Status = LoanStatus.Released;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return (true, null, false);
+            });
         }
 
         private void AddStatusHistory(

@@ -71,82 +71,86 @@ namespace LoanApplicationPlatform.API.Services
 
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> PostPaymentAsync(int loanApplicationId, int scheduleId, int changedByUserId, PaymentDto paymentDto)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC sp_getapplock @Resource = N'LoanApplicationPlatform.Treasury', @LockMode = N'Exclusive', @LockOwner = N'Transaction';");
-
-            var schedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
-            var scheduleToPost = schedules.FirstOrDefault(s => s.Id == scheduleId);
-
-            if (scheduleToPost == null) return (false, "Payment schedule not found.", true);
-
-            if (scheduleToPost.Status != PaymentStatus.PaymentSubmitted)
-                return (false, "Schedule must have a submitted payment to post.", false);
-
-            if (!scheduleToPost.SubmittedAmount.HasValue)
-                return (false, "A submitted payment amount is required before posting.", false);
-
-            if (paymentDto.Amount != scheduleToPost.SubmittedAmount.Value)
-                return (false, "Posted payment amount must match the applicant's submitted amount.", false);
-
-            if (paymentDto.Amount > scheduleToPost.AmountDue - scheduleToPost.AmountPaid)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                return (false, "Payment amount exceeds the remaining balance for this schedule.", false);
-            }
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await _context.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_getapplock @Resource = N'LoanApplicationPlatform.Treasury', @LockMode = N'Exclusive', @LockOwner = N'Transaction';");
 
-            scheduleToPost.AmountPaid += paymentDto.Amount;
+                var schedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
+                var scheduleToPost = schedules.FirstOrDefault(s => s.Id == scheduleId);
 
-            if (scheduleToPost.AmountPaid >= scheduleToPost.AmountDue)
-            {
-                scheduleToPost.Status = PaymentStatus.Paid;
-            }
-            else
-            {
-                scheduleToPost.Status = PaymentStatus.PartiallyPaid;
-            }
+                if (scheduleToPost == null) return (false, "Payment schedule not found.", true);
 
-            scheduleToPost.SubmittedAmount = null;
+                if (scheduleToPost.Status != PaymentStatus.PaymentSubmitted)
+                    return (false, "Schedule must have a submitted payment to post.", false);
 
-            // Update Treasury
-            var treasury = await _treasuryRepository.GetTreasuryAsync();
-            if (treasury != null)
-            {
-                treasury.Balance += paymentDto.Amount;
+                if (!scheduleToPost.SubmittedAmount.HasValue)
+                    return (false, "A submitted payment amount is required before posting.", false);
 
-                _treasuryRepository.AddTreasuryTransaction(new TreasuryTransaction
+                if (paymentDto.Amount != scheduleToPost.SubmittedAmount.Value)
+                    return (false, "Posted payment amount must match the applicant's submitted amount.", false);
+
+                if (paymentDto.Amount > scheduleToPost.AmountDue - scheduleToPost.AmountPaid)
                 {
-                    Amount = paymentDto.Amount,
-                    TransactionDate = DateTime.UtcNow,
-                    Type = "PaymentReceived",
-                    ReferenceId = loanApplicationId
-                });
-            }
-
-            // Loan Closure check
-            var allSchedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
-            if (allSchedules.All(s => s.Status == PaymentStatus.Paid))
-            {
-                var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
-                if (application != null)
-                {
-                    _context.LoanApplicationStatusHistories.Add(new LoanApplicationStatusHistory
-                    {
-                        LoanApplicationId = application.Id,
-                        LoanApplication = application,
-                        PreviousStatus = application.Status,
-                        NewStatus = LoanStatus.Completed,
-                        Remarks = "All payment schedules have been paid.",
-                        ChangedByUserId = changedByUserId,
-                        ChangedAt = DateTime.UtcNow,
-                        TenantId = application.TenantId
-                    });
-                    application.Status = LoanStatus.Completed;
+                    return (false, "Payment amount exceeds the remaining balance for this schedule.", false);
                 }
-            }
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-            return (true, null, false);
+                scheduleToPost.AmountPaid += paymentDto.Amount;
+
+                if (scheduleToPost.AmountPaid >= scheduleToPost.AmountDue)
+                {
+                    scheduleToPost.Status = PaymentStatus.Paid;
+                }
+                else
+                {
+                    scheduleToPost.Status = PaymentStatus.PartiallyPaid;
+                }
+
+                scheduleToPost.SubmittedAmount = null;
+
+                // Update Treasury
+                var treasury = await _treasuryRepository.GetTreasuryAsync();
+                if (treasury != null)
+                {
+                    treasury.Balance += paymentDto.Amount;
+
+                    _treasuryRepository.AddTreasuryTransaction(new TreasuryTransaction
+                    {
+                        Amount = paymentDto.Amount,
+                        TransactionDate = DateTime.UtcNow,
+                        Type = "PaymentReceived",
+                        ReferenceId = loanApplicationId
+                    });
+                }
+
+                // Loan Closure check
+                var allSchedules = await _loanRepository.GetPaymentSchedulesAsync(loanApplicationId);
+                if (allSchedules.All(s => s.Status == PaymentStatus.Paid))
+                {
+                    var application = await _loanRepository.GetLoanApplicationAsync(loanApplicationId);
+                    if (application != null)
+                    {
+                        _context.LoanApplicationStatusHistories.Add(new LoanApplicationStatusHistory
+                        {
+                            LoanApplicationId = application.Id,
+                            LoanApplication = application,
+                            PreviousStatus = application.Status,
+                            NewStatus = LoanStatus.Completed,
+                            Remarks = "All payment schedules have been paid.",
+                            ChangedByUserId = changedByUserId,
+                            ChangedAt = DateTime.UtcNow,
+                            TenantId = application.TenantId
+                        });
+                        application.Status = LoanStatus.Completed;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return (true, null, false);
+            });
         }
     }
 }
