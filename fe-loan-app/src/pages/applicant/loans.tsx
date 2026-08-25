@@ -1,4 +1,3 @@
-import { Link, useNavigate } from 'react-router-dom'
 import { FiChevronRight, FiPlusCircle } from 'react-icons/fi'
 import { useLoanApplications } from '@/api/loan-applications/loan-applications.queries'
 import type { LoanApplication } from '@/api/loan-applications/loan-applications.types'
@@ -8,11 +7,15 @@ import { Button } from '@/components/ui/button'
 import { Money } from '@/components/money/money'
 import { LoanStatusPill } from '@/components/status-pill'
 import { LoadingState, ErrorState, EmptyState } from '@/components/states'
+import { useState } from 'react'
+import { ApplyLoanModal } from '@/components/loan/apply-loan-modal'
+import { LoanApplicationModal } from '@/components/loan/loan-application-modal'
 
-const LoanRow = ({ loan }: { loan: LoanApplication }) => (
-  <Link
-    to={`/loans/${loan.id}`}
-    className="flex items-center gap-4 rounded-xl border border-line bg-surface px-4 py-4 transition-colors hover:border-brand/40 hover:bg-brand-tint/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+const LoanRow = ({ loan, onOpen }: { loan: LoanApplication; onOpen: (id: number) => void }) => (
+  <button
+    type="button"
+    onClick={() => onOpen(loan.id)}
+    className="flex w-full items-center gap-4 rounded-xl border border-line bg-surface px-4 py-4 text-left transition-colors hover:border-brand/40 hover:bg-brand-tint/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
   >
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2">
@@ -29,20 +32,29 @@ const LoanRow = ({ loan }: { loan: LoanApplication }) => (
       </p>
     </div>
     <FiChevronRight className="size-5 shrink-0" />
-  </Link>
+  </button>
 )
 
 export const LoansPage = () => {
-  const navigate = useNavigate()
   const loansQuery = useLoanApplications({ pageSize: 50 })
+  const [openLoan, setOpenLoan] = useState<boolean>(false)
+  const [selectedLoanId, setSelectedLoanId] = useState<number | null>(null)
 
   return (
-    <div>
+    <>
+      <ApplyLoanModal open={openLoan} onOpenChange={setOpenLoan} />
+      {selectedLoanId !== null && (
+        <LoanApplicationModal
+          loanApplicationId={selectedLoanId}
+          open={selectedLoanId !== null}
+          onOpenChange={(next) => !next && setSelectedLoanId(null)}
+        />
+      )}
       <PageHeader
         title="My loans"
         subtitle="Every application you've made with Loanly."
         actions={
-          <Button onClick={() => navigate('/loans/new')}>
+          <Button onClick={() => setOpenLoan(true)}>
             <FiPlusCircle className="size-4" />
             Apply for a loan
           </Button>
@@ -61,11 +73,11 @@ export const LoansPage = () => {
         ) : (
           <div className="space-y-3">
             {loansQuery.data.items.map((loan) => (
-              <LoanRow key={loan.id} loan={loan} />
+              <LoanRow key={loan.id} loan={loan} onOpen={setSelectedLoanId} />
             ))}
           </div>
         ))}
-    </div>
+    </>
   )
 }
 

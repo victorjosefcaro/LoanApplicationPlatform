@@ -1,28 +1,31 @@
 import { useState, type ChangeEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useLoanApplication } from '@/api/loan-applications/loan-applications.queries'
 import { usePaymentSchedules } from '@/api/payments/payments.queries'
 import { useSubmitPayment } from '@/api/payments/payments.mutations'
 import type { PaymentSchedule } from '@/api/payments/payments.types'
-import PageHeader from '@/components/page-header'
-import Card from '@/components/shared/components/card'
 import { Button } from '@/components/ui/button'
 import InputField from '@/components/shared/components/input-field'
 import { Money } from '@/components/money/money'
 import { ScheduleTable } from '@/components/payments/schedule-table'
 import ModalDialog from '@/components/shared/components/modal-dialog'
 import { LoadingState, ErrorState, EmptyState, InlineError } from '@/components/states'
-import { isNotFoundError, notFound } from '@/api/is-not-found-error'
 
 const remainingOf = (s: PaymentSchedule): number => Math.max(0, s.amountDue - s.amountPaid)
 
-export const LoanPayPage = () => {
-  const params = useParams()
-  const id = Number(params.id)
-  const navigate = useNavigate()
+type PaymentScheduleModalProps = {
+  loanApplicationId: number
+  /** Loan purpose, shown in the modal subtitle. */
+  purpose?: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
 
-  const loanQuery = useLoanApplication(id)
-  const schedulesQuery = usePaymentSchedules(id)
+export const PaymentScheduleModal = ({
+  loanApplicationId: id,
+  purpose,
+  open,
+  onOpenChange,
+}: PaymentScheduleModalProps) => {
+  const schedulesQuery = usePaymentSchedules(id, { enabled: open })
   const submit = useSubmitPayment()
 
   const [active, setActive] = useState<PaymentSchedule | null>(null)
@@ -42,56 +45,41 @@ export const LoanPayPage = () => {
     )
   }
 
-  if (!Number.isFinite(id)) throw notFound()
-  if (loanQuery.isLoading || schedulesQuery.isLoading) {
-    return <LoadingState label="Loading your schedule…" />
-  }
-  if (isNotFoundError(loanQuery.error)) throw notFound()
-  if (loanQuery.isError) return <ErrorState error={loanQuery.error} onRetry={loanQuery.refetch} />
-  if (schedulesQuery.isError) {
-    return <ErrorState error={schedulesQuery.error} onRetry={schedulesQuery.refetch} />
-  }
-
   const schedules = schedulesQuery.data ?? []
 
   return (
-    <div>
-      <PageHeader
+    <>
+      <ModalDialog
+        open={open}
+        onOpenChange={onOpenChange}
         title="Make a payment"
-        subtitle={
-          loanQuery.data ? `${loanQuery.data.purpose} · application #${id}` : `Application #${id}`
-        }
-        actions={
-          <Button variant="ghost" onClick={() => navigate(`/loans/${id}`)}>
-            Back to application
-          </Button>
-        }
-      />
-
-      <Card
-        title="Payment schedule"
-        content={
-          schedules.length === 0 ? (
-            <EmptyState
-              title="No schedule yet"
-              message="Your amortization schedule appears once funds are released."
-            />
-          ) : (
-            <ScheduleTable
-              schedules={schedules}
-              renderAction={(schedule) =>
-                schedule.status === 'Paid' ? (
-                  <span className="text-xs text-brand">Settled</span>
-                ) : (
-                  <Button size="sm" onClick={() => openPay(schedule)}>
-                    Pay
-                  </Button>
-                )
-              }
-            />
-          )
-        }
-      />
+        desc={purpose ? `${purpose} · application #${id}` : `Application #${id}`}
+        size="lg"
+      >
+        {schedulesQuery.isLoading ? (
+          <LoadingState label="Loading your schedule…" />
+        ) : schedulesQuery.isError ? (
+          <ErrorState error={schedulesQuery.error} onRetry={schedulesQuery.refetch} />
+        ) : schedules.length === 0 ? (
+          <EmptyState
+            title="No schedule yet"
+            message="Your amortization schedule appears once funds are released."
+          />
+        ) : (
+          <ScheduleTable
+            schedules={schedules}
+            renderAction={(schedule) =>
+              schedule.status === 'Paid' ? (
+                <span className="text-xs text-brand">Settled</span>
+              ) : (
+                <Button size="sm" onClick={() => openPay(schedule)}>
+                  Pay
+                </Button>
+              )
+            }
+          />
+        )}
+      </ModalDialog>
 
       <ModalDialog
         open={active !== null}
@@ -140,8 +128,8 @@ export const LoanPayPage = () => {
           </p>
         </div>
       </ModalDialog>
-    </div>
+    </>
   )
 }
 
-export default LoanPayPage
+export default PaymentScheduleModal

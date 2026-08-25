@@ -120,9 +120,16 @@ export const AdminLoanReviewPage = () => {
         title={`${loan.applicantName}`}
         subtitle={`Application #${loan.id} · ${loan.purpose}`}
         actions={
-          <Button variant="ghost" onClick={() => navigate('/admin')}>
-            Back to queue
-          </Button>
+          <div className="flex gap-2">
+            {loan.status === 'Released' && (
+              <Button onClick={() => navigate(`/admin/loans/${loan.id}/payments`)}>
+                Manage payments
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => navigate('/admin')}>
+              Back to queue
+            </Button>
+          </div>
         }
       />
 

@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLogin } from '@/api/auth/auth.mutations'
 import { useAuth, homePathForRole } from '@/auth/auth-context'
+import { TENANT_OPTIONS } from '@/data/tenants'
 import InputField from '@/components/shared/components/input-field'
 import { Button } from '@/components/ui/button'
 import { Spinner, InlineError } from '@/components/states'
@@ -10,6 +11,7 @@ import { AuthLayout } from './auth-layout'
 export const LoginPage = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [tenantId, setTenantId] = useState(TENANT_OPTIONS[0].value)
   const login = useLogin()
   const { signIn } = useAuth()
   const navigate = useNavigate()
@@ -19,7 +21,7 @@ export const LoginPage = () => {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     login.mutate(
-      { username: username.trim(), password },
+      { username: username.trim(), password, tenantId: Number(tenantId) },
       {
         onSuccess: (token) => {
           const user = signIn(token, username.trim())
@@ -43,6 +45,15 @@ export const LoginPage = () => {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <InputField
+          label="Tenant"
+          fieldType="select"
+          value={tenantId}
+          onValueChange={setTenantId}
+          options={TENANT_OPTIONS}
+          isRequired
+          size="xl"
+        />
         <InputField
           label="Username"
           value={username}

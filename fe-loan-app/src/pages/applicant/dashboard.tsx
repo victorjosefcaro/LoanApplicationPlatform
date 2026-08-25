@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowRight, FiCreditCard, FiFileText, FiPlusCircle } from 'react-icons/fi'
-import { useLoanApplications } from '@/api/loan-applications/loan-applications.queries'
+import {
+  useLoanApplications,
+  useLoanApplicationHistory,
+} from '@/api/loan-applications/loan-applications.queries'
 import { usePaymentSchedules } from '@/api/payments/payments.queries'
 import type { LoanApplication } from '@/api/loan-applications/loan-applications.types'
 import type { PaymentSchedule } from '@/api/payments/payments.types'
@@ -13,10 +17,15 @@ import { Money } from '@/components/money/money'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
 import { LoanStatusPill } from '@/components/status-pill'
 import { ProgressBar } from '@/components/progress-bar'
+import { Pager } from '@/components/pager'
 import { ScheduleTable } from '@/components/payments/schedule-table'
+import { LoanSummary } from '@/components/loan/loan-summary'
+import { HistoryTimeline } from '@/components/loan/history-timeline'
+import { ApplyLoanModal } from '@/components/loan/apply-loan-modal'
+import { LoanApplicationModal } from '@/components/loan/loan-application-modal'
+import { PaymentScheduleModal } from '@/components/payments/payment-schedule-modal'
 import { LoadingState, ErrorState, EmptyState } from '@/components/states'
 
-const IN_PROGRESS = new Set(['Submitted', 'Returned', 'Reviewed', 'Approved'])
 const ACTIVE = new Set(['Released', 'Completed'])
 
 const nextUnpaid = (schedules: PaymentSchedule[]): PaymentSchedule | null => {
@@ -26,13 +35,13 @@ const nextUnpaid = (schedules: PaymentSchedule[]): PaymentSchedule | null => {
   return pending[0] ?? null
 }
 
-const QuickActions = ({ onGo }: { onGo: (path: string) => void }) => (
+const QuickActions = ({ onApply, onGo }: { onApply: () => void; onGo: (path: string) => void }) => (
   <Card
     title="Quick actions"
     contentClassName="grid gap-2"
     content={
       <>
-        <Button variant="outline" className="justify-start" onClick={() => onGo('/loans/new')}>
+        <Button variant="outline" className="justify-start" onClick={onApply}>
           <FiPlusCircle className="size-4" /> Apply for a loan
         </Button>
         <Button variant="outline" className="justify-start" onClick={() => onGo('/loans')}>
@@ -46,13 +55,28 @@ const QuickActions = ({ onGo }: { onGo: (path: string) => void }) => (
 export const DashboardPage = () => {
   const navigate = useNavigate()
   const loansQuery = useLoanApplications({ pageSize: 50 })
+  const [applyOpen, setApplyOpen] = useState(false)
+  const [payOpen, setPayOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [current, setCurrent] = useState(0)
 
-  const loans = loansQuery.data?.items ?? []
-  const inReview: LoanApplication | undefined = loans.find((l) => IN_PROGRESS.has(l.status))
-  const active: LoanApplication | undefined = loans.find((l) => ACTIVE.has(l.status))
+  const loans = [...(loansQuery.data?.items ?? [])].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
 
-  const schedulesQuery = usePaymentSchedules(active?.id ?? Number.NaN)
-  const schedules = schedulesQuery.data ?? []
+  // Clamp the carousel index in case the loan list shrank between renders.
+  const index = Math.min(current, Math.max(0, loans.length - 1))
+  const selected: LoanApplication | undefined = loans[index]
+  const isActive = selected ? ACTIVE.has(selected.status) : false
+
+  const schedulesQuery = usePaymentSchedules(selected?.id ?? Number.NaN, { enabled: isActive })
+  const schedules = isActive ? (schedulesQuery.data ?? []) : []
+
+  // Before funds are released there is no repayment to show, so surface the
+  // application's details and status history instead.
+  const historyQuery = useLoanApplicationHistory(selected?.id ?? Number.NaN, {
+    enabled: !!selected && !isActive,
+  })
 
   const totalDue = schedules.reduce((sum, s) => sum + s.amountDue, 0)
   const totalPaid = schedules.reduce((sum, s) => sum + s.amountPaid, 0)
@@ -67,14 +91,31 @@ export const DashboardPage = () => {
 
   return (
     <>
+      <ApplyLoanModal open={applyOpen} onOpenChange={setApplyOpen} />
+      {selected && (
+        <LoanApplicationModal
+          loanApplicationId={selected.id}
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+        />
+      )}
+      {selected && isActive && (
+        <PaymentScheduleModal
+          loanApplicationId={selected.id}
+          purpose={selected.purpose}
+          open={payOpen}
+          onOpenChange={setPayOpen}
+        />
+      )}
+
       <PageHeader title="Overview" subtitle="Here's where your loans stand." />
 
-      {nothingYet ? (
+      {nothingYet || !selected ? (
         <EmptyState
           title="Welcome to Loanly"
           message="You don't have any loans yet. Apply for your first one — it only takes a minute."
           action={
-            <Button onClick={() => navigate('/loans/new')}>
+            <Button onClick={() => setApplyOpen(true)}>
               <FiPlusCircle className="size-4" /> Apply for a loan
             </Button>
           }
@@ -82,51 +123,36 @@ export const DashboardPage = () => {
       ) : (
         <div className="space-y-5">
           <div className="grid gap-5 lg:grid-cols-2">
-            {inReview ? (
-              <Card
-                title="Application in progress"
-                action={<LoanStatusPill status={inReview.status} />}
-                contentClassName="space-y-4"
-                content={
-                  <>
-                    <div>
-                      <p className="text-sm text-brand">{inReview.purpose}</p>
-                      <p className="font-heading text-2xl font-bold text-ink">
-                        <Money amount={inReview.amount} />
-                      </p>
-                    </div>
-                    <LoanLifecycle status={inReview.status} />
-                    <Button
-                      variant="ghost"
-                      className=""
-                      onClick={() => navigate(`/loans/${inReview.id}`)}
-                    >
+            <QuickActions onApply={() => setApplyOpen(true)} onGo={navigate} />
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Card
+              title="Loan application"
+              action={<LoanStatusPill status={selected.status} />}
+              contentClassName="space-y-4"
+              content={
+                <>
+                  <div>
+                    <p className="text-sm text-brand">{selected.purpose}</p>
+                    <p className="font-heading text-2xl font-bold text-ink">
+                      <Money amount={selected.amount} />
+                    </p>
+                  </div>
+                  <LoanLifecycle status={selected.status} />
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" onClick={() => setDetailOpen(true)}>
                       View application <FiArrowRight className="size-4" />
                     </Button>
-                  </>
-                }
-              />
-            ) : (
-              <Card
-                title="Apply for a loan"
-                contentClassName="space-y-3"
-                content={
-                  <>
-                    <p className="text-sm text-brand">
-                      Need funds? Start an application and see your estimate instantly.
-                    </p>
-                    <Button onClick={() => navigate('/loans/new')}>
-                      <FiPlusCircle className="size-4" /> Apply for a loan
-                    </Button>
-                  </>
-                }
-              />
-            )}
+                    <Pager index={index} count={loans.length} onChange={setCurrent} label="loan" />
+                  </div>
+                </>
+              }
+            />
 
-            {active && (
+            {isActive ? (
               <Card
                 title="Your loan"
-                action={<LoanStatusPill status={active.status} />}
+                action={<LoanStatusPill status={selected.status} />}
                 contentClassName="space-y-4"
                 content={
                   <>
@@ -150,22 +176,35 @@ export const DashboardPage = () => {
                         </span>
                       </div>
                     )}
-                    <Button onClick={() => navigate(`/loans/${active.id}/pay`)}>
+                    <Button onClick={() => setPayOpen(true)}>
                       <FiCreditCard className="size-4" /> Make a payment
                     </Button>
                   </>
                 }
               />
+            ) : (
+              <Card title="Details" content={<LoanSummary loan={selected} />} />
             )}
           </div>
 
-          {active && schedules.length > 0 && (
+          {isActive && schedules.length > 0 && (
             <Card title="Payment schedule" content={<ScheduleTable schedules={schedules} />} />
           )}
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <QuickActions onGo={navigate} />
-          </div>
+          {!isActive && (
+            <Card
+              title="History"
+              content={
+                <>
+                  {historyQuery.isLoading && <p className="text-sm text-brand">Loading…</p>}
+                  {historyQuery.isError && (
+                    <ErrorState error={historyQuery.error} onRetry={historyQuery.refetch} />
+                  )}
+                  {historyQuery.data && <HistoryTimeline items={historyQuery.data} />}
+                </>
+              }
+            />
+          )}
         </div>
       )}
     </>

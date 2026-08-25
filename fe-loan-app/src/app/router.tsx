@@ -10,10 +10,6 @@ import { AdminRegisterPage } from '@/pages/auth/admin-register'
 
 import { DashboardPage } from '@/pages/applicant/dashboard'
 import { LoansPage } from '@/pages/applicant/loans'
-import { LoanNewPage } from '@/pages/applicant/loan-new'
-import { LoanDetailPage } from '@/pages/applicant/loan-detail'
-import { LoanEditPage } from '@/pages/applicant/loan-edit'
-import { LoanPayPage } from '@/pages/applicant/loan-pay'
 
 import { ReviewQueuePage } from '@/pages/admin/review-queue'
 import { AdminLoanReviewPage } from '@/pages/admin/loan-review'
@@ -59,10 +55,6 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <DashboardPage /> },
       { path: '/loans', element: <LoansPage /> },
-      { path: '/loans/new', element: <LoanNewPage /> },
-      { path: '/loans/:id', element: <LoanDetailPage /> },
-      { path: '/loans/:id/edit', element: <LoanEditPage /> },
-      { path: '/loans/:id/pay', element: <LoanPayPage /> },
     ],
   },
 

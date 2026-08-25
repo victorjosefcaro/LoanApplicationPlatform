@@ -13,16 +13,16 @@ export const useLoanApplications = (params?: LoanApplicationListParams) =>
     queryFn: () => getLoanApplications(params),
   })
 
-export const useLoanApplication = (id: number) =>
+export const useLoanApplication = (id: number, options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: loanApplicationKeys.detail(id),
     queryFn: () => getLoanApplication(id),
-    enabled: Number.isFinite(id),
+    enabled: Number.isFinite(id) && (options?.enabled ?? true),
   })
 
-export const useLoanApplicationHistory = (id: number) =>
+export const useLoanApplicationHistory = (id: number, options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: loanApplicationKeys.history(id),
     queryFn: () => getLoanApplicationHistory(id),
-    enabled: Number.isFinite(id),
+    enabled: Number.isFinite(id) && (options?.enabled ?? true),
   })
