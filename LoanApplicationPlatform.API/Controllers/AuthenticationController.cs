@@ -22,7 +22,7 @@ namespace LoanApplicationPlatform.API.Controllers
             var token = await _authService.AuthenticateAsync(loginRequest);
             if (token == null)
             {
-                return Unauthorized();
+                return Unauthorized("Invalid username or password.");
             }
 
             return Ok(token);

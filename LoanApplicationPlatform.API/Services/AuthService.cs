@@ -34,7 +34,9 @@ namespace LoanApplicationPlatform.API.Services
             }
 
             var user = await _userRepository.GetByUsernameAsync(loginRequest.Username, ignoreQueryFilters: true);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
+            if (user == null 
+                || !string.Equals(user.Username, loginRequest.Username, StringComparison.Ordinal)
+                || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
             {
                 return null;
             }
