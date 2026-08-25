@@ -5,6 +5,8 @@ export const STORAGE_KEYS = {
     USER_ID: 'lap.auth.userId',
     USERNAME: 'lap.auth.username',
   },
+  // Per-user profile is namespaced with the user id (or username as a fallback).
+  PROFILE_FULL_NAME_PREFIX: 'lap.profile.fullName.',
 } as const
 
 export const ROLES = {

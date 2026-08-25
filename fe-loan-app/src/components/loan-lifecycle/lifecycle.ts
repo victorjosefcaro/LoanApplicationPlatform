@@ -24,7 +24,7 @@ const STAGE_LABELS = ['Submitted', 'Under review', 'Approved', 'Funds released']
 const CURRENT_INDEX: Record<string, number> = {
   Submitted: 1, // submission complete; awaiting review
   Returned: 0, // back with the applicant to revise & resubmit
-  Reviewed: 1, // under review
+  Reviewed: 2, // under review
   Approved: 3, // approved; awaiting fund release
   Released: 4, // every stage complete
   Completed: 4,

@@ -2,12 +2,14 @@ import { useNavigate } from 'react-router-dom'
 import { useCreateLoanApplication } from '@/api/loan-applications/loan-applications.mutations'
 import type { LoanApplicationCreateRequest } from '@/api/loan-applications/loan-applications.types'
 import { useAuth } from '@/auth/auth-context'
+import { useProfile } from '@/hooks/profile/use-profile'
 import PageHeader from '@/components/page-header'
 import Card from '@/components/shared/components/card'
 import { LoanForm } from '@/components/loan/loan-form'
 
 export const LoanNewPage = () => {
   const { user } = useAuth()
+  const { fullName } = useProfile()
   const create = useCreateLoanApplication()
   const navigate = useNavigate()
 
@@ -26,7 +28,7 @@ export const LoanNewPage = () => {
       <Card
         content={
           <LoanForm
-            initial={{ applicantName: user?.username ?? '' }}
+            initial={{ applicantName: fullName.trim() || user?.username || '' }}
             submitLabel="Submit application"
             pending={create.isPending}
             error={create.isError ? create.error : undefined}

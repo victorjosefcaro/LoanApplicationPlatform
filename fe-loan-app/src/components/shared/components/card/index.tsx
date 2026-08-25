@@ -13,7 +13,7 @@ const Card = ({ title, action, content, contentClassName }: ICard) => (
     {title && (
       <CardHeader className={action ? 'flex flex-col items-start' : undefined}>
         <CardTitle>{title}</CardTitle>
-       <span> {action}</span>
+        <span> {action}</span>
       </CardHeader>
     )}
     <CardContent className={contentClassName}>{content}</CardContent>

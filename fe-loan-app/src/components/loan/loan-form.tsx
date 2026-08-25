@@ -8,6 +8,7 @@ import { Money } from '@/components/money/money'
 import { Spinner, InlineError } from '@/components/states'
 import { getErrorMessage } from '@/utils/errors'
 import DataMap from '@/utils/data-map'
+import useProfile from '@/hooks/profile/use-profile'
 
 export type LoanFormValues = {
   applicantName: string
@@ -43,7 +44,7 @@ export const LoanForm = ({
   onCancel,
 }: LoanFormProps) => {
   const [values, setValues] = useState<LoanFormValues>({ ...EMPTY, ...initial })
-
+  const { fullName } = useProfile()
   const set =
     (key: keyof LoanFormValues) =>
     (input: string | ChangeEvent<HTMLInputElement>): void => {
@@ -73,7 +74,7 @@ export const LoanForm = ({
   }[] = [
     {
       key: 'applicantName',
-      label: 'Full name',
+      label: fullName !== '' ? 'Full Name' : 'Username',
       placeholder: 'As it appears on your ID',
       isReadOnly: true,
     },

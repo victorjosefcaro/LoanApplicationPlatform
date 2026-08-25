@@ -20,6 +20,8 @@ import { AdminLoanReviewPage } from '@/pages/admin/loan-review'
 import { AdminLoanPaymentsPage } from '@/pages/admin/loan-payments'
 import { TreasuryPage } from '@/pages/admin/treasury'
 
+import { ProfilePage } from '@/pages/profile/profile'
+
 import { ComponentsGalleryPage } from '@/pages/dev/components-gallery'
 import { NotFoundPage } from '@/pages/not-found'
 import { RouteErrorBoundary } from '@/components/route-error-boundary'
@@ -62,6 +64,16 @@ export const router = createBrowserRouter([
       { path: '/loans/:id/edit', element: <LoanEditPage /> },
       { path: '/loans/:id/pay', element: <LoanPayPage /> },
     ],
+  },
+
+  {
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
+    errorElement: <RouteErrorBoundary />,
+    children: [{ path: '/profile', element: <ProfilePage /> }],
   },
 
   {
