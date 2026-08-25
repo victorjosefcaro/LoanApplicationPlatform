@@ -19,10 +19,10 @@ namespace LoanApplicationPlatform.API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<string>> Authenticate(LoginRequestDto loginRequest)
         {
-            var token = await _authService.AuthenticateAsync(loginRequest);
+            var (token, errorMessage) = await _authService.AuthenticateAsync(loginRequest);
             if (token == null)
             {
-                return Unauthorized();
+                return Unauthorized(errorMessage ?? "Invalid username or password.");
             }
 
             return Ok(token);
