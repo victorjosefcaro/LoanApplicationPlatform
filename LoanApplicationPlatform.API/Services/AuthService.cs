@@ -69,6 +69,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Username and Password are required.");
             }
 
+            var (isPasswordValid, passwordError) = ValidatePassword(requestBody.Password);
+            if (!isPasswordValid)
+            {
+                return (false, passwordError);
+            }
+
             var tenantId = requestBody.TenantId ?? 1;
             if (!await _context.Tenants.AnyAsync(t => t.Id == tenantId))
             {
@@ -102,6 +108,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Username, Password, and Role are required.");
             }
 
+            var (isPasswordValid, passwordError) = ValidatePassword(requestBody.Password);
+            if (!isPasswordValid)
+            {
+                return (false, passwordError);
+            }
+
             var validRoles = new[] { "Applicant", "Reviewer", "Approver", "Admin" };
             if (!validRoles.Contains(requestBody.Role))
             {
@@ -130,6 +142,48 @@ namespace LoanApplicationPlatform.API.Services
 
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();
+
+            return (true, null);
+        }
+
+        private static (bool IsValid, string? ErrorMessage) ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                return (false, "Password is required.");
+            }
+
+            var missingRequirements = new List<string>();
+
+            if (password.Length < 8)
+            {
+                missingRequirements.Add("be at least 8 characters long");
+            }
+
+            if (!password.Any(char.IsUpper))
+            {
+                missingRequirements.Add("contain at least one uppercase letter");
+            }
+
+            if (!password.Any(char.IsLower))
+            {
+                missingRequirements.Add("contain at least one lowercase letter");
+            }
+
+            if (!password.Any(char.IsDigit))
+            {
+                missingRequirements.Add("contain at least one number");
+            }
+
+            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+            {
+                missingRequirements.Add("contain at least one special character");
+            }
+
+            if (missingRequirements.Count > 0)
+            {
+                return (false, $"Password must {string.Join(", ", missingRequirements)}.");
+            }
 
             return (true, null);
         }
