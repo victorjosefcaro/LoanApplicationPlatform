@@ -69,6 +69,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Username and Password are required.");
             }
 
+            var (isUsernameValid, usernameError) = ValidateUsername(requestBody.Username);
+            if (!isUsernameValid)
+            {
+                return (false, usernameError);
+            }
+
             var tenantId = requestBody.TenantId ?? 1;
             if (!await _context.Tenants.AnyAsync(t => t.Id == tenantId))
             {
@@ -102,6 +108,12 @@ namespace LoanApplicationPlatform.API.Services
                 return (false, "Username, Password, and Role are required.");
             }
 
+            var (isUsernameValid, usernameError) = ValidateUsername(requestBody.Username);
+            if (!isUsernameValid)
+            {
+                return (false, usernameError);
+            }
+
             var validRoles = new[] { "Applicant", "Reviewer", "Approver", "Admin" };
             if (!validRoles.Contains(requestBody.Role))
             {
@@ -130,6 +142,26 @@ namespace LoanApplicationPlatform.API.Services
 
             _userRepository.AddUser(newUser);
             await _userRepository.SaveChangesAsync();
+
+            return (true, null);
+        }
+
+        private static (bool IsValid, string? ErrorMessage) ValidateUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+            {
+                return (false, "Username must be at least 3 characters long.");
+            }
+
+            if (username.Length > 50)
+            {
+                return (false, "Username cannot exceed 50 characters.");
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9]+$"))
+            {
+                return (false, "Username can only contain alphanumeric characters (letters and numbers).");
+            }
 
             return (true, null);
         }
