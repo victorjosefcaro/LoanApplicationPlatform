@@ -72,7 +72,7 @@ namespace LoanApplicationPlatform.API.Services
         public async Task<(bool Success, string? ErrorMessage, bool NotFound)> PostPaymentAsync(int loanApplicationId, int scheduleId, int changedByUserId, PaymentDto paymentDto)
         {
             var strategy = _context.Database.CreateExecutionStrategy();
-            return await strategy.ExecuteAsync(async () =>
+            return await strategy.ExecuteAsync<(bool Success, string? ErrorMessage, bool NotFound)>(async () =>
             {
                 await using var transaction = await _context.Database.BeginTransactionAsync();
                 await _context.Database.ExecuteSqlRawAsync(
