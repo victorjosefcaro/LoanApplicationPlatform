@@ -34,7 +34,7 @@ namespace LoanApplicationPlatform.API.Services
             }
 
             var user = await _userRepository.GetByUsernameAsync(loginRequest.Username, ignoreQueryFilters: true);
-            if (user == null)
+            if (user == null || !string.Equals(user.Username, loginRequest.Username, StringComparison.Ordinal))
             {
                 return (null, "Invalid username or password.");
             }

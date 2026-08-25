@@ -40,9 +40,10 @@ namespace LoanApplicationPlatform.API.Controllers
 
             return Ok();
         }
+
         [HttpPost("admin/register")]
-		[Authorize(Roles = "Admin")]
-		public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> RegisterUserAdmin(AdminRegistrationDto requestBody)
         {
             var (success, errorMessage) = await _authService.RegisterAdminUserAsync(requestBody);
             if (!success)
