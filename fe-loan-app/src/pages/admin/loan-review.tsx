@@ -13,13 +13,14 @@ import { ROLES } from '@/constants'
 import { useAuth } from '@/auth/auth-context'
 import PageHeader from '@/components/page-header'
 import Card from '@/components/shared/components/card'
+import ConfirmDialog from '@/components/shared/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
 import { LoanSummary } from '@/components/loan/loan-summary'
 import { HistoryTimeline } from '@/components/loan/history-timeline'
 import { Money } from '@/components/money/money'
-import { LoadingState, ErrorState, InlineError } from '@/components/states'
+import { LoadingState, ErrorState } from '@/components/states'
 import { isNotFoundError, notFound } from '@/api/is-not-found-error'
 
 export const AdminLoanReviewPage = () => {
@@ -35,6 +36,7 @@ export const AdminLoanReviewPage = () => {
   const release = useReleaseLoanApplicationFunds()
 
   const [remarks, setRemarks] = useState('')
+  const [pendingConfirm, setPendingConfirm] = useState<ConfirmConfig | null>(null)
 
   if (!Number.isFinite(id)) throw notFound()
   if (loanQuery.isLoading) return <LoadingState label="Loading application…" />
@@ -53,10 +55,43 @@ export const AdminLoanReviewPage = () => {
   const actionError = review.error ?? approve.error ?? release.error
   const hasError = review.isError || approve.isError || release.isError
 
-  const runReview = (status: 'Reviewed' | 'Returned' | 'Rejected') =>
-    review.mutate({ id, payload: { status, remarks: remarks.trim() || undefined } })
-  const runApprove = (status: 'Approved' | 'Returned' | 'Rejected') =>
-    approve.mutate({ id, payload: { status, remarks: remarks.trim() || undefined } })
+  const closeConfirm = () => setPendingConfirm(null)
+
+  // Every decision opens a confirmation first — the mutation only runs once the
+  // admin confirms, and the dialog stays open while pending / on error.
+  const askReview = (
+    status: 'Reviewed' | 'Returned' | 'Rejected',
+    copy: Omit<ConfirmConfig, 'run'>,
+  ) =>
+    setPendingConfirm({
+      ...copy,
+      run: () =>
+        review.mutate(
+          { id, payload: { status, remarks: remarks.trim() || undefined } },
+          { onSuccess: closeConfirm },
+        ),
+    })
+
+  const askApprove = (
+    status: 'Approved' | 'Returned' | 'Rejected',
+    copy: Omit<ConfirmConfig, 'run'>,
+  ) =>
+    setPendingConfirm({
+      ...copy,
+      run: () =>
+        approve.mutate(
+          { id, payload: { status, remarks: remarks.trim() || undefined } },
+          { onSuccess: closeConfirm },
+        ),
+    })
+
+  const askRelease = () =>
+    setPendingConfirm({
+      title: 'Release funds?',
+      description: `This moves the loan amount from Treasury to the applicant and starts their repayment schedule for application #${id}. This can't be undone.`,
+      confirmLabel: 'Release funds',
+      run: () => release.mutate(id, { onSuccess: closeConfirm }),
+    })
 
   const renderDecision = () => {
     if (loan.status === 'Submitted') {
@@ -68,9 +103,34 @@ export const AdminLoanReviewPage = () => {
           remarks={remarks}
           setRemarks={setRemarks}
           pending={pending}
-          primary={{ label: 'Mark under review', onClick: () => runReview('Reviewed') }}
-          secondary={{ label: 'Return for changes', onClick: () => runReview('Returned') }}
-          danger={{ label: 'Reject', onClick: () => runReview('Rejected') }}
+          primary={{
+            label: 'Mark under review',
+            onClick: () =>
+              askReview('Reviewed', {
+                title: 'Mark this application under review?',
+                description: `This moves application #${id} into review.`,
+                confirmLabel: 'Mark under review',
+              }),
+          }}
+          secondary={{
+            label: 'Return for changes',
+            onClick: () =>
+              askReview('Returned', {
+                title: 'Return this application?',
+                description: `The applicant will be asked to make changes to application #${id}.`,
+                confirmLabel: 'Return',
+              }),
+          }}
+          danger={{
+            label: 'Reject',
+            onClick: () =>
+              askReview('Rejected', {
+                title: 'Reject this application?',
+                description: `This rejects application #${id}. This can't be undone.`,
+                confirmLabel: 'Reject',
+                confirmVariant: 'destructive',
+              }),
+          }}
         />
       )
     }
@@ -83,9 +143,34 @@ export const AdminLoanReviewPage = () => {
           remarks={remarks}
           setRemarks={setRemarks}
           pending={pending}
-          primary={{ label: 'Approve', onClick: () => runApprove('Approved') }}
-          secondary={{ label: 'Return for changes', onClick: () => runApprove('Returned') }}
-          danger={{ label: 'Reject', onClick: () => runApprove('Rejected') }}
+          primary={{
+            label: 'Approve',
+            onClick: () =>
+              askApprove('Approved', {
+                title: 'Approve this application?',
+                description: `This locks in the loan for application #${id}.`,
+                confirmLabel: 'Approve',
+              }),
+          }}
+          secondary={{
+            label: 'Return for changes',
+            onClick: () =>
+              askApprove('Returned', {
+                title: 'Return this application?',
+                description: `The applicant will be asked to make changes to application #${id}.`,
+                confirmLabel: 'Return',
+              }),
+          }}
+          danger={{
+            label: 'Reject',
+            onClick: () =>
+              askApprove('Rejected', {
+                title: 'Reject this application?',
+                description: `This rejects application #${id}. This can't be undone.`,
+                confirmLabel: 'Reject',
+                confirmVariant: 'destructive',
+              }),
+          }}
         />
       )
     }
@@ -97,11 +182,7 @@ export const AdminLoanReviewPage = () => {
             starts their repayment schedule.
           </p>
           {!canRelease && <p className="text-sm text-coral">Only an admin can release funds.</p>}
-          <Button
-            variant="gold"
-            disabled={!canRelease || pending}
-            onClick={() => release.mutate(id)}
-          >
+          <Button variant="gold" disabled={!canRelease || pending} onClick={askRelease}>
             {release.isPending ? 'Releasing…' : 'Release funds'}
           </Button>
         </div>
@@ -139,16 +220,7 @@ export const AdminLoanReviewPage = () => {
 
           <Card title="Application" content={<LoanSummary loan={loan} />} />
 
-          <Card
-            title="Decision"
-            contentClassName="space-y-3"
-            content={
-              <>
-                {renderDecision()}
-                {hasError && <InlineError error={actionError} />}
-              </>
-            }
-          />
+          <Card title="Decision" contentClassName="space-y-3" content={renderDecision()} />
         </div>
 
         <Card
@@ -164,8 +236,28 @@ export const AdminLoanReviewPage = () => {
           }
         />
       </div>
+
+      <ConfirmDialog
+        open={!!pendingConfirm}
+        onOpenChange={(next) => !next && closeConfirm()}
+        title={pendingConfirm?.title ?? ''}
+        description={pendingConfirm?.description}
+        confirmLabel={pendingConfirm?.confirmLabel ?? 'Confirm'}
+        confirmVariant={pendingConfirm?.confirmVariant}
+        pending={pending}
+        error={hasError ? actionError : undefined}
+        onConfirm={() => pendingConfirm?.run()}
+      />
     </div>
   )
+}
+
+type ConfirmConfig = {
+  title: string
+  description: string
+  confirmLabel: string
+  confirmVariant?: 'default' | 'destructive'
+  run: () => void
 }
 
 type DecisionAction = { label: string; onClick: () => void }

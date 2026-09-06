@@ -107,22 +107,11 @@ export const LoanForm = ({
       "We couldn't read your account name. Please refresh or sign in again."
   }
 
-  // Loan amount must exceed one month's income.
-  const amountBelowIncome = amount > 0 && income > 0 && amount < income
-  const amountEqualsIncome = amount > 0 && income > 0 && amount === income
-  if (amountBelowIncome) {
-    fieldErrors.amount = 'Loan amount must be greater than your monthly income.'
-  } else if (amountEqualsIncome) {
-    fieldErrors.amount = 'Loan amount cannot be equal to your monthly income.'
-  }
-
   const valid =
     values.applicantName.trim().length > 0 &&
     amount > 0 &&
     term > 0 &&
     income > 0 &&
-    !amountBelowIncome &&
-    !amountEqualsIncome &&
     values.purpose.trim().length > 0
 
   const handleSubmit = (event: FormEvent) => {

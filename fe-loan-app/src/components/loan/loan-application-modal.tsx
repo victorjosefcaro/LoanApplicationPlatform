@@ -7,13 +7,14 @@ import {
 import { useCancelLoanApplication } from '@/api/loan-applications/loan-applications.mutations'
 import { isEditableLoan } from '@/constants'
 import ModalDialog from '@/components/shared/components/modal-dialog'
+import ConfirmDialog from '@/components/shared/components/confirm-dialog'
 import { Card } from '@/components/shared'
 import { LoanLifecycle } from '@/components/loan-lifecycle/loan-lifecycle'
 import { LoanSummary } from '@/components/loan/loan-summary'
 import { HistoryTimeline } from '@/components/loan/history-timeline'
 import { LoanEditModal } from '@/components/loan/loan-edit-modal'
 import { PaymentScheduleModal } from '@/components/payments/payment-schedule-modal'
-import { LoadingState, ErrorState, InlineError } from '@/components/states'
+import { LoadingState, ErrorState } from '@/components/states'
 
 type LoanApplicationModalProps = {
   loanApplicationId: number
@@ -137,37 +138,24 @@ export const LoanApplicationModal = ({
         onOpenChange={setPayOpen}
       />
 
-      <ModalDialog
+      <ConfirmDialog
         open={confirmOpen}
-        onOpenChange={() => setConfirmOpen(false)}
+        onOpenChange={(next) => !next && setConfirmOpen(false)}
         title="Cancel this application?"
-        desc="This can't be undone. You can always apply again later."
-        size="sm"
-        actionButton={[
-          {
-            type: 'button',
-            variant: 'ghost',
-            value: 'Keep it',
-            onClick: () => setConfirmOpen(false),
-            disabled: cancel.isPending,
-          },
-          {
-            type: 'button',
-            variant: 'destructive',
-            value: cancel.isPending ? 'Cancelling…' : 'Cancel application',
-            onClick: handleCancel,
-            disabled: cancel.isPending,
-          },
-        ]}
-      >
-        {cancel.isError ? (
-          <InlineError error={cancel.error} />
-        ) : (
+        description="This can't be undone. You can always apply again later."
+        body={
           <p className="text-sm text-brand">
             Cancelling stops this application from moving forward.
           </p>
-        )}
-      </ModalDialog>
+        }
+        cancelLabel="Keep it"
+        confirmLabel="Cancel application"
+        pendingLabel="Cancelling…"
+        confirmVariant="destructive"
+        pending={cancel.isPending}
+        error={cancel.isError ? cancel.error : undefined}
+        onConfirm={handleCancel}
+      />
     </>
   )
 }
