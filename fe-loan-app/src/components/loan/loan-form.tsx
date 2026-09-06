@@ -107,11 +107,26 @@ export const LoanForm = ({
       "We couldn't read your account name. Please refresh or sign in again."
   }
 
+  // Mirror the backend affordability rule (LoanApplicationService): reject when the estimated
+  // monthly payment exceeds monthly income. Uses the same principal-only formula (amount / term)
+  // as the server — NOT the interest-inclusive `monthly` above — so the form never blocks a
+  // submission the API would accept.
+  const estimatedPayment = term > 0 ? amount / term : 0
+  const unaffordable = amount > 0 && term > 0 && income > 0 && estimatedPayment > income
+  if (unaffordable && !fieldErrors.amount) {
+    const formattedPayment = `₱${new Intl.NumberFormat('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(estimatedPayment)}`
+    fieldErrors.amount = `Estimated monthly payment (${formattedPayment}) is higher than your monthly income. Try a longer term or a smaller amount.`
+  }
+
   const valid =
     values.applicantName.trim().length > 0 &&
     amount > 0 &&
     term > 0 &&
     income > 0 &&
+    !unaffordable &&
     values.purpose.trim().length > 0
 
   const handleSubmit = (event: FormEvent) => {
