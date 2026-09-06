@@ -102,9 +102,9 @@ export const ErrorState = ({
   </div>
 )
 
-/** Inline error text for forms/mutations. */
-export const InlineError = ({ error }: { error: unknown }) => (
+/** Inline error text for forms/mutations. Pass `message` to override the derived text. */
+export const InlineError = ({ error, message }: { error?: unknown; message?: string }) => (
   <p className="text-sm font-medium text-coral" role="alert">
-    {getErrorMessage(error)}
+    {message ?? getErrorMessage(error)}
   </p>
 )

@@ -10,11 +10,25 @@ export const getErrorMessage = (
   if (typeof error === 'string' && error.trim()) return error
 
   const withResponse = error as WithResponse
+  const status = withResponse?.response?.status
   const data = withResponse?.response?.data
+
+  // Prefer a specific, server-provided message when present.
   if (typeof data === 'string' && data.trim()) return data
   if (data && typeof data === 'object') {
+    const detail = (data as Record<string, unknown>).detail
+    if (typeof detail === 'string' && detail.trim()) return detail
+  }
+
+  // Map auth status codes to friendly guidance. The backend returns bare
+  // ProblemDetails (e.g. title "Unauthorized"/"Forbidden") that aren't
+  // user-facing, so fall back to these before using that boilerplate.
+  if (status === 401) return 'Authentication required. Please log in again.'
+  if (status === 403) return 'You do not have permission to access this module.'
+
+  if (data && typeof data === 'object') {
     const record = data as Record<string, unknown>
-    const detail = record.detail ?? record.title ?? record.message
+    const detail = record.title ?? record.message
     if (typeof detail === 'string' && detail.trim()) return detail
   }
 

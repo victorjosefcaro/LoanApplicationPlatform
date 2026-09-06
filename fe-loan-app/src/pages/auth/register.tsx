@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLogin, useRegister } from '@/api/auth/auth.mutations'
 import { useAuth } from '@/auth/auth-context'
+import { TENANT_OPTIONS } from '@/data/tenants'
 import InputField from '@/components/shared/components/input-field'
 import { Button } from '@/components/ui/button'
 import { Spinner, InlineError } from '@/components/states'
@@ -12,6 +13,7 @@ export const RegisterPage = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [tenantId, setTenantId] = useState(TENANT_OPTIONS[0].value)
 
   const register = useRegister()
   const login = useLogin()
@@ -28,7 +30,7 @@ export const RegisterPage = () => {
     if (!username.trim() || !passwordCheck.isValid) return
     if (!confirmPassword || password !== confirmPassword) return
 
-    const creds = { username: username.trim(), password }
+    const creds = { username: username.trim(), password, tenantId: Number(tenantId) }
     register.mutate(creds, {
       onSuccess: () => {
         login.mutate(creds, {
@@ -55,6 +57,15 @@ export const RegisterPage = () => {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <InputField
+          label="Tenant"
+          fieldType="select"
+          value={tenantId}
+          onValueChange={setTenantId}
+          options={TENANT_OPTIONS}
+          isRequired
+          size="xl"
+        />
         <InputField
           label="Username"
           size="xl"

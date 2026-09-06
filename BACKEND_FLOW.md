@@ -18,7 +18,7 @@ HTTP → JWT Bearer auth → [Authorize]/Policy role gate → Controller
 
 - **JWT claims:** `NameIdentifier` (userId), `Role`, `tenant_id`. Issued in [AuthService.cs:47-52](LoanApplicationPlatform.API/Services/AuthService.cs#L47-L52), valid **2 hours**.
 - **Multi-tenancy is implicit.** [TenantService](LoanApplicationPlatform.API/Services/TenantService.cs) reads `tenant_id` from the token; every entity has a global filter `TenantId == GetCurrentTenantId()`. You never send a tenant in the body. On insert, [context SaveChangesAsync](LoanApplicationPlatform.API/DbContexts/LoanApplicationPlatformContext.cs#L190-L206) stamps `TenantId` automatically.
-- **Login is the only cross-tenant lookup** (`ignoreQueryFilters: true`), because the user isn't authenticated yet.
+- **Login is the only cross-tenant lookup** (`ignoreQueryFilters: true`), because the user isn't authenticated yet. Login still requires a `tenantId` and validates it against the user's own `TenantId`; a mismatch is rejected with the generic `401 "Invalid username or password."` (prevents tenant enumeration).
 
 ---
 

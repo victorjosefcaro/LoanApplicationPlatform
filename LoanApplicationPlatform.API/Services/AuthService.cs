@@ -33,15 +33,28 @@ namespace LoanApplicationPlatform.API.Services
                 return (null, "Username and Password are required.");
             }
 
+            if (loginRequest.TenantId is null)
+            {
+                return (null, "Tenant is required.");
+            }
+
             var user = await _userRepository.GetByUsernameAsync(loginRequest.Username, ignoreQueryFilters: true);
             if (user == null || !string.Equals(user.Username, loginRequest.Username, StringComparison.Ordinal))
             {
                 return (null, "Invalid username or password.");
             }
 
+            // Enforce that the credential is used under its own tenant. This case has a
+            // distinct message so the user knows to switch tenants; credential failures
+            // below stay generic so they don't reveal whether a username exists.
+            if (user.TenantId != loginRequest.TenantId.Value)
+            {
+                return (null, "This account isn't registered under the selected tenant. Please choose the correct tenant.");
+            }
+
             if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
             {
-                return (null, "Invalid Password.");
+                return (null, "Invalid username or password.");
             }
 
             var securityKey = new SymmetricSecurityKey(
