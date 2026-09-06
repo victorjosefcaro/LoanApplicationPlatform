@@ -3,6 +3,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 
 import { cn } from '@/lib/utils'
 import { Button } from './button'
+import { Tooltip } from './tooltip'
 import { XIcon } from 'lucide-react'
 
 const Dialog = ({ ...props }: DialogPrimitive.Root.Props) => (
@@ -52,13 +53,15 @@ const DialogContent = ({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close
-          data-slot="dialog-close"
-          render={<Button variant="ghost" className="absolute top-2 right-2" size="icon-sm" />}
-        >
-          <XIcon />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
+        <Tooltip content="Close">
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            render={<Button variant="ghost" className="absolute top-2 right-2" size="icon-sm" />}
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        </Tooltip>
       )}
     </DialogPrimitive.Popup>
   </DialogPortal>

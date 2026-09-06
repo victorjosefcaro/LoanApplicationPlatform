@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip } from '@/components/ui/tooltip'
 
 import {
   Pagination,
@@ -403,14 +404,16 @@ const ShadcnDataTable = <T,>({
 
                       {canFilter && (
                         <Popover>
-                          <PopoverTrigger
-                            className={`rounded p-0.5 hover:bg-gray-100 ${
-                              filters[col.key as string]?.size ? 'text-blue-600' : 'text-gray-400'
-                            }`}
-                            title={`Filter ${col.label}`}
-                          >
-                            <FiFilter className="text-xs" />
-                          </PopoverTrigger>
+                          <Tooltip content={`Filter ${col.label}`}>
+                            <PopoverTrigger
+                              className={`rounded p-0.5 hover:bg-gray-100 ${
+                                filters[col.key as string]?.size ? 'text-blue-600' : 'text-gray-400'
+                              }`}
+                              aria-label={`Filter ${col.label}`}
+                            >
+                              <FiFilter className="text-xs" />
+                            </PopoverTrigger>
+                          </Tooltip>
 
                           <PopoverContent align="start" className="w-56 p-2">
                             <div className="mb-1 flex items-center justify-between px-1">
@@ -509,19 +512,21 @@ const ShadcnDataTable = <T,>({
                           .filter((a) => !a.show || a.show(item))
                           .map((action, i) => {
                             const disabled = action.disabled ? action.disabled(item) : false
+                            const tip = action.title ?? action.label ?? ''
 
                             return (
-                              <Button
-                                key={i}
-                                variant={action.variant ?? 'default'}
-                                size="icon"
-                                disabled={disabled}
-                                title={action.title ?? action.label ?? ''}
-                                className={action.className}
-                                onClick={() => action.onClick(item)}
-                              >
-                                {action.icon ?? action.label}
-                              </Button>
+                              <Tooltip key={i} content={tip}>
+                                <Button
+                                  variant={action.variant ?? 'default'}
+                                  size="icon"
+                                  disabled={disabled}
+                                  aria-label={tip || undefined}
+                                  className={action.className}
+                                  onClick={() => action.onClick(item)}
+                                >
+                                  {action.icon ?? action.label}
+                                </Button>
+                              </Tooltip>
                             )
                           })}
                       </div>

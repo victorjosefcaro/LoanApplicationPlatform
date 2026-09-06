@@ -3,6 +3,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa'
 
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { Tooltip } from '@/components/ui/tooltip'
 import DataMap from '@/utils/data-map'
 
 import {
@@ -146,14 +147,16 @@ const InputField = ({
             placeholder={placeholder}
             aria-invalid={!!errorMessage}
           />
-          <button
-            type="button"
-            className="absolute top-1/2 right-2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-            onClick={() => setShowPassword((prev) => !prev)}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <FaEye /> : <FaEyeSlash />}
-          </button>
+          <Tooltip content={showPassword ? 'Hide password' : 'Show password'}>
+            <button
+              type="button"
+              className="absolute top-1/2 right-2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <FaEye /> : <FaEyeSlash />}
+            </button>
+          </Tooltip>
         </div>
       )}
 
