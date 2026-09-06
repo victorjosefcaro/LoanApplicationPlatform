@@ -26,6 +26,7 @@ const applicantOnly = (element: ReactNode) => (
   <RequireAuth roles={[ROLES.APPLICANT]}>{element}</RequireAuth>
 )
 const staffOnly = (element: ReactNode) => <RequireAuth roles={STAFF_ROLES}>{element}</RequireAuth>
+const adminOnly = (element: ReactNode) => <RequireAuth roles={[ROLES.ADMIN]}>{element}</RequireAuth>
 
 export const router = createBrowserRouter([
   {
@@ -73,7 +74,7 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     children: [
       { path: '/admin', element: <ReviewQueuePage /> },
-      { path: '/admin/register', element: <AdminRegisterPage /> },
+      { path: '/admin/register', element: adminOnly(<AdminRegisterPage />) },
       { path: '/admin/loans/:id', element: <AdminLoanReviewPage /> },
       { path: '/admin/loans/:id/payments', element: <AdminLoanPaymentsPage /> },
       { path: '/admin/treasury', element: <TreasuryPage /> },
