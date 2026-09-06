@@ -89,6 +89,10 @@ export const DashboardPage = () => {
 
   const nothingYet = loans.length === 0
 
+  // Shared reference stamped on every loan-specific card so it's unambiguous that all
+  // sections describe the same currently-selected loan, not separate records.
+  const loanRef = selected ? `Application #${selected.id} · ${selected.purpose}` : ''
+
   return (
     <>
       <ApplyLoanModal open={applyOpen} onOpenChange={setApplyOpen} />
@@ -128,6 +132,7 @@ export const DashboardPage = () => {
           <div className="grid gap-5 lg:grid-cols-2">
             <Card
               title="Loan application"
+              subtitle={loanRef}
               action={<LoanStatusPill status={selected.status} />}
               contentClassName="space-y-4"
               content={
@@ -152,6 +157,7 @@ export const DashboardPage = () => {
             {isActive ? (
               <Card
                 title="Your loan"
+                subtitle={loanRef}
                 action={<LoanStatusPill status={selected.status} />}
                 contentClassName="space-y-4"
                 content={
@@ -183,17 +189,26 @@ export const DashboardPage = () => {
                 }
               />
             ) : (
-              <Card title="Details" content={<LoanSummary loan={selected} />} />
+              <Card
+                title="Details"
+                subtitle={loanRef}
+                content={<LoanSummary loan={selected} />}
+              />
             )}
           </div>
 
           {isActive && schedules.length > 0 && (
-            <Card title="Payment schedule" content={<ScheduleTable schedules={schedules} />} />
+            <Card
+              title="Payment schedule"
+              subtitle={loanRef}
+              content={<ScheduleTable schedules={schedules} />}
+            />
           )}
 
           {!isActive && (
             <Card
               title="History"
+              subtitle={loanRef}
               content={
                 <>
                   {historyQuery.isLoading && <p className="text-sm text-brand">Loading…</p>}
