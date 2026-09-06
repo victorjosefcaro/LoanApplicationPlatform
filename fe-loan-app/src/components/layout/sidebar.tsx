@@ -1,6 +1,14 @@
 import { type ComponentType } from 'react'
 import { NavLink } from 'react-router-dom'
-import { FiDollarSign, FiFileText, FiHome, FiInbox, FiPlusCircle, FiUserPlus } from 'react-icons/fi'
+import {
+  FiDollarSign,
+  FiFileText,
+  FiHome,
+  FiInbox,
+  FiPlusCircle,
+  FiUserPlus,
+  FiUsers,
+} from 'react-icons/fi'
 import { cn } from '@/lib/utils'
 import { ROLES } from '@/constants'
 import { Logo } from '@/components/brand/logo'
@@ -23,8 +31,11 @@ const STAFF_NAV: NavItem[] = [
   { to: '/admin/treasury', label: 'Treasury', icon: FiDollarSign },
 ]
 
-// Adding team members is restricted to Administrators.
-const ADMIN_NAV: NavItem[] = [{ to: '/admin/register', label: 'Add team member', icon: FiUserPlus }]
+// Team-member management is restricted to Administrators.
+const ADMIN_NAV: NavItem[] = [
+  { to: '/admin/users', label: 'Team members', icon: FiUsers },
+  { to: '/admin/register', label: 'Add team member', icon: FiUserPlus },
+]
 
 export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { isStaff, user } = useAuth()

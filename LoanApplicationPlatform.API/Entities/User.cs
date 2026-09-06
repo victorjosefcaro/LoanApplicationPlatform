@@ -9,6 +9,9 @@ namespace LoanApplicationPlatform.API.Entities
         public string PasswordHash { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty; // Applicant, Admin, Reviewer, Approver
 
+        // Deactivated accounts are retained but blocked from signing in.
+        public bool IsActive { get; set; } = true;
+
         [ForeignKey("Tenant")]
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }

@@ -12,6 +12,7 @@ namespace LoanApplicationPlatform.API.Profiles
             CreateMap<LoanApplicationForCreationDto, LoanApplication>();
             CreateMap<LoanApplicationForUpdateDto, LoanApplication>();
             CreateMap<PaymentSchedule, PaymentScheduleDto>();
+            CreateMap<User, UserDto>();
         }
     }
 }

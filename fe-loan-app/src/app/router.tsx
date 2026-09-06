@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { LoginPage } from '@/pages/auth/login'
 import { RegisterPage } from '@/pages/auth/register'
 import { AdminRegisterPage } from '@/pages/auth/admin-register'
+import { UserManagementPage } from '@/pages/admin/user-management'
 
 import { DashboardPage } from '@/pages/applicant/dashboard'
 import { LoansPage } from '@/pages/applicant/loans'
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/admin', element: <ReviewQueuePage /> },
       { path: '/admin/register', element: adminOnly(<AdminRegisterPage />) },
+      { path: '/admin/users', element: adminOnly(<UserManagementPage />) },
       { path: '/admin/loans/:id', element: <AdminLoanReviewPage /> },
       { path: '/admin/loans/:id/payments', element: <AdminLoanPaymentsPage /> },
       { path: '/admin/treasury', element: <TreasuryPage /> },

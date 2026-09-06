@@ -82,6 +82,7 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILoanApplicationService, LoanApplicationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddDbContext<LoanApplicationPlatform.API.DbContexts.LoanApplicationPlatformContext>(options =>
     options.UseSqlServer(
