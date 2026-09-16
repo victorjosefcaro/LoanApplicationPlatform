@@ -26,8 +26,21 @@ namespace LoanApplicationPlatform.API.Repositories
 
         public async Task<PagedList<TreasuryTransaction>> GetTreasuryTransactionsAsync(ResourceParameters parameters)
         {
-            var collection = _context.TreasuryTransactions.OrderByDescending(t => t.TransactionDate);
-            return await PagedList<TreasuryTransaction>.CreateAsync(collection, parameters.PageNumber, parameters.PageSize);
+            var collection = _context.TreasuryTransactions as IQueryable<TreasuryTransaction>;
+
+            if (!string.IsNullOrWhiteSpace(parameters.SearchQuery))
+            {
+                var search = parameters.SearchQuery.Trim();
+                var cleanSearch = search.TrimStart('#');
+                bool isInt = int.TryParse(cleanSearch, out int searchId);
+
+                collection = collection.Where(t =>
+                    t.Type.Contains(search) ||
+                    (isInt && (t.Id == searchId || t.ReferenceId == searchId)));
+            }
+
+            var orderedCollection = collection.OrderByDescending(t => t.TransactionDate);
+            return await PagedList<TreasuryTransaction>.CreateAsync(orderedCollection, parameters.PageNumber, parameters.PageSize);
         }
 
         public async Task<bool> SaveChangesAsync()

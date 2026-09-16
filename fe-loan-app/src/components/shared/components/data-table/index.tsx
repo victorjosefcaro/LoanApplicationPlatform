@@ -487,8 +487,9 @@ const ShadcnDataTable = <T,>({
                   colSpan={columns.length + (actions ? 1 : 0)}
                   className="h-32 text-center text-sm text-gray-500"
                 >
-                  {emptyMessage ??
-                    (searchTerm ? 'No records match your search.' : 'No records found.')}
+                  {searchTerm
+                    ? 'No records match your search.'
+                    : (emptyMessage ?? 'No records found.')}
                 </TableCell>
               </TableRow>
             ) : (

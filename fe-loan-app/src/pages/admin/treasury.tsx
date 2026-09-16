@@ -1,7 +1,8 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react'
 import { useTreasuryBalance, useTreasuryTransactions } from '@/api/treasury/treasury.queries'
 import { useDepositFunds } from '@/api/treasury/treasury.mutations'
 import type { TreasuryTransaction } from '@/api/treasury/treasury.types'
+import { useDebounce } from '@/hooks/use-debounce'
 import { ROLES } from '@/constants'
 import { useAuth } from '@/auth/auth-context'
 import { formatDateTime } from '@/utils/format'
@@ -59,7 +60,17 @@ const DepositForm = () => {
 const TransactionsLedger = () => {
   const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
-  const query = useTreasuryTransactions({ pageNumber: page, pageSize: PAGE_SIZE })
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearchTerm])
+
+  const query = useTreasuryTransactions({
+    pageNumber: page,
+    pageSize: PAGE_SIZE,
+    searchQuery: debouncedSearchTerm.trim() || undefined,
+  })
 
   const items = query.data?.items ?? []
   const totalCount = query.data?.pagination?.totalCount ?? items.length
@@ -89,7 +100,7 @@ const TransactionsLedger = () => {
       columns={columns}
       searchTerm={searchTerm}
       setSearchTerm={setSearchTerm}
-      searchPlaceholder="Search this page…"
+      searchPlaceholder="Search by type or reference #…"
       showAddButton={false}
       isLoading={query.isLoading}
       emptyMessage="No transactions yet."

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiEye } from 'react-icons/fi'
 import { useLoanApplications } from '@/api/loan-applications/loan-applications.queries'
 import type { LoanApplication } from '@/api/loan-applications/loan-applications.types'
+import { useDebounce } from '@/hooks/use-debounce'
 import { formatDate } from '@/utils/format'
 import { cn } from '@/lib/utils'
 import PageHeader from '@/components/page-header'
@@ -27,8 +28,18 @@ export const ReviewQueuePage = () => {
   const [status, setStatus] = useState<string | undefined>('Submitted')
   const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
-  const query = useLoanApplications({ status, pageNumber: page, pageSize: PAGE_SIZE })
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearchTerm])
+
+  const query = useLoanApplications({
+    status,
+    pageNumber: page,
+    pageSize: PAGE_SIZE,
+    searchQuery: debouncedSearchTerm.trim() || undefined,
+  })
   const items = query.data?.items ?? []
   const totalCount = query.data?.pagination?.totalCount ?? items.length
 
@@ -89,7 +100,7 @@ export const ReviewQueuePage = () => {
           actions={actions}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          searchPlaceholder="Search this page…"
+          searchPlaceholder="Search by applicant, purpose, or ID…"
           showAddButton={false}
           isLoading={query.isLoading}
           emptyMessage="No applications with this status right now."

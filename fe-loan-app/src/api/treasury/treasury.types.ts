@@ -18,4 +18,5 @@ export type TreasuryTransactionListParams = {
   pageNumber?: number
   pageSize?: number
   status?: string
+  searchQuery?: string
 }

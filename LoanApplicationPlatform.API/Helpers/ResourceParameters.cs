@@ -20,5 +20,19 @@ namespace LoanApplicationPlatform.API.Helpers
         [RegularExpression("^(Submitted|Returned|Reviewed|Approved|Rejected|Released|Cancelled|Completed)$",
             ErrorMessage = "Status must be a valid loan status.")]
         public string? Status { get; set; }
+
+        private string? _searchQuery;
+
+        public string? SearchQuery
+        {
+            get => _searchQuery;
+            set => _searchQuery = value;
+        }
+
+        public string? SearchTerm
+        {
+            get => _searchQuery;
+            set => _searchQuery = value;
+        }
     }
 }

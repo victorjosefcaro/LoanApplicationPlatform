@@ -36,6 +36,7 @@ export type LoanApplicationListParams = {
   pageNumber?: number
   pageSize?: number
   status?: LoanStatus | string
+  searchQuery?: string
 }
 
 export type LoanApplicationCreateRequest = {
