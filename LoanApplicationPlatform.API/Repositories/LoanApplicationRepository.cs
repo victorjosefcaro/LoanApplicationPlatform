@@ -28,6 +28,18 @@ namespace LoanApplicationPlatform.API.Repositories
                 collection = collection.Where(a => a.Status == parsedStatus);
             }
 
+            if (!string.IsNullOrWhiteSpace(parameters.SearchQuery))
+            {
+                var search = parameters.SearchQuery.Trim();
+                var cleanSearch = search.TrimStart('#');
+                bool isInt = int.TryParse(cleanSearch, out int searchId);
+
+                collection = collection.Where(a =>
+                    a.ApplicantName.Contains(search) ||
+                    a.Purpose.Contains(search) ||
+                    (isInt && a.Id == searchId));
+            }
+
             var orderedCollection = collection.OrderByDescending(a => a.CreatedAt);
             return await PagedList<LoanApplication>.CreateAsync(orderedCollection, parameters.PageNumber, parameters.PageSize);
         }
